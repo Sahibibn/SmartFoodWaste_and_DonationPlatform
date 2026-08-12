@@ -37,6 +37,18 @@ import NGODashboard from "./Pages/Ngo/NGODashboard";
 import AvailableDonations from "./Pages/Ngo/AvailableDonation";
 import MyClaims from "./Pages/Ngo/MyClaims";
 
+import Login from "./Pages/Auth/Login";
+import Signup from "./Pages/Auth/Signup";
+import ProtectedRoute from "./Components/ProtectedRoute";
+
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { fetchCurrentUser } from "./redux/authSlice";
+
+
+import DonorDonationDetails from "./Pages/Donor/DonationDetails";
+import NGODonationDetails from "./Pages/Ngo/DonationDetails";
+
 
 // =====================================================
 // LAYOUT
@@ -68,6 +80,13 @@ function Layout({ children }) {
 // =====================================================
 
 function App() {
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
   return (
     <>
       <Toaster position="top-right" />
@@ -87,27 +106,44 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <Layout>
-              <DonorDashboard />
-            </Layout>
+            <ProtectedRoute allowedRoles={["DONOR"]}>
+              <Layout>
+                <DonorDashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/create-donation"
           element={
-            <Layout>
-              <CreateDonation />
-            </Layout>
+            <ProtectedRoute allowedRoles={["DONOR"]}>
+              <Layout>
+                <CreateDonation />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/my-donations"
           element={
-            <Layout>
-              <MyDonations />
-            </Layout>
+            <ProtectedRoute allowedRoles={["DONOR"]}>
+              <Layout>
+                <MyDonations />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-donations/:id"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR"]}>
+              <Layout>
+                <DonorDonationDetails />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
@@ -117,27 +153,46 @@ function App() {
         <Route
           path="/ngo-dashboard"
           element={
-            <Layout>
-              <NGODashboard />
-            </Layout>
+            <ProtectedRoute allowedRoles={["NGO"]}>
+              <Layout>
+                <NGODashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/available-donations"
           element={
-            <Layout>
-              <AvailableDonations />
-            </Layout>
+            <ProtectedRoute allowedRoles={["NGO"]}>
+              <Layout>
+                <AvailableDonations />
+              </Layout>
+            </ProtectedRoute>
           }
         />
+        
+
+        <Route
+          path="/donation/:id"
+          element={
+            <ProtectedRoute allowedRoles={["NGO"]}>
+              <Layout>
+                <NGODonationDetails />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
 
         <Route
           path="/claims"
           element={
-            <Layout>
-              <MyClaims />
-            </Layout>
+            <ProtectedRoute allowedRoles={["NGO"]}>
+              <Layout>
+                <MyClaims />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
@@ -183,6 +238,16 @@ function App() {
         <Route
           path="*"
           element={<NotFound />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/signup"
+          element={<Signup />}
         />
 
       </Routes>

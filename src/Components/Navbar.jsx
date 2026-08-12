@@ -1,62 +1,55 @@
-import React from "react";
-import { Heart, Bell, User } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import { logout } from "../redux/authSlice";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { user } = useSelector(
+    (state) => state.auth
+  );
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logout()).unwrap();
+
+      toast.success("Logged out successfully");
+
+      navigate("/login");
+    } catch (error) {
+      toast.error(error || "Logout failed");
+    }
+  };
+
   return (
-    <nav className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
+    <nav className="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
 
-      {/* Logo */}
-      <div className="flex items-center gap-2">
-        <div className="w-9 h-9 bg-green-600 rounded-lg flex items-center justify-center">
-          <Heart
-            size={20}
-            className="text-white"
-            fill="white"
-          />
-        </div>
+      <h1 className="text-xl font-bold text-green-600">
+        Smart Food Waste
+      </h1>
 
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">
-            SmartFood
-          </h1>
-
-          <p className="text-xs text-gray-400">
-            Reduce Waste • Feed People
-          </p>
-        </div>
-      </div>
-
-
-      {/* Right Side */}
       <div className="flex items-center gap-4">
 
-        {/* Notification */}
-        <button
-          className="relative p-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          <Bell
-            size={21}
-            className="text-gray-600"
-          />
+        {user && (
+          <div className="text-right">
+            <p className="font-semibold text-gray-800">
+              {user.name}
+            </p>
 
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
-
-
-        {/* User */}
-        <button
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-            <User
-              size={18}
-              className="text-green-600"
-            />
+            <p className="text-xs text-gray-500">
+              {user.role}
+            </p>
           </div>
+        )}
 
-          <span className="hidden sm:block text-sm font-medium text-gray-700">
-            User
-          </span>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium"
+        >
+          Logout
         </button>
 
       </div>
