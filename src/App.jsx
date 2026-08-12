@@ -1,122 +1,193 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
-function App() {
-  const [count, setCount] = useState(0)
+// =====================================================
+// COMPONENTS
+// =====================================================
 
+import Navbar from "./Components/Navbar";
+import Sidebar from "./Components/Sidebar";
+
+// =====================================================
+// PUBLIC PAGES
+// =====================================================
+
+import Home from "./Pages/Home";
+import NotFound from "./Pages/NotFound";
+
+// =====================================================
+// ANALYTICS
+// =====================================================
+
+import AnalyticsDashboard from "./Pages/Analytics/AnalyticsDashboard";
+
+// =====================================================
+// DONOR PAGES
+// =====================================================
+
+import DonorDashboard from "./Pages/Donor/DonorDashBoard";
+import CreateDonation from "./Pages/Donor/CreateDonation";
+import MyDonations from "./Pages/Donor/MyDonation";
+
+// =====================================================
+// NGO PAGES
+// =====================================================
+
+import NGODashboard from "./Pages/Ngo/NGODashboard";
+import AvailableDonations from "./Pages/Ngo/AvailableDonation";
+import MyClaims from "./Pages/Ngo/MyClaims";
+
+
+// =====================================================
+// LAYOUT
+// =====================================================
+
+function Layout({ children }) {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-gray-50">
 
-      <div className="ticks"></div>
+      <Navbar />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <div className="flex">
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <Sidebar />
+
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+
+      </div>
+
+    </div>
+  );
 }
 
-export default App
+
+// =====================================================
+// APP
+// =====================================================
+
+function App() {
+  return (
+    <>
+      <Toaster position="top-right" />
+
+      <Routes>
+
+        {/* HOME */}
+
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+
+        {/* DONOR */}
+
+        <Route
+          path="/dashboard"
+          element={
+            <Layout>
+              <DonorDashboard />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/create-donation"
+          element={
+            <Layout>
+              <CreateDonation />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/my-donations"
+          element={
+            <Layout>
+              <MyDonations />
+            </Layout>
+          }
+        />
+
+
+        {/* NGO */}
+
+        <Route
+          path="/ngo-dashboard"
+          element={
+            <Layout>
+              <NGODashboard />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/available-donations"
+          element={
+            <Layout>
+              <AvailableDonations />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/claims"
+          element={
+            <Layout>
+              <MyClaims />
+            </Layout>
+          }
+        />
+
+
+        {/* ANALYTICS */}
+
+        <Route
+          path="/analytics"
+          element={
+            <Layout>
+              <AnalyticsDashboard />
+            </Layout>
+          }
+        />
+
+
+        {/* NGOs */}
+
+        <Route
+          path="/ngos"
+          element={
+            <Layout>
+
+              <div>
+
+                <h1 className="text-3xl font-bold text-gray-800">
+                  NGOs
+                </h1>
+
+                <p className="text-gray-500 mt-2">
+                  NGO directory coming soon.
+                </p>
+
+              </div>
+
+            </Layout>
+          }
+        />
+
+
+        {/* 404 */}
+
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
+
+      </Routes>
+    </>
+  );
+}
+
+export default App;
