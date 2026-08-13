@@ -100,7 +100,7 @@ export const getMyDonations = () => {
 // GET /api/donations/available
 // -----------------------------------------------------
 
-export const getAvailableDonations = () => {
+export const getAvailableDonations = async() => {
   return API.get("/donations/available");
 };
 
@@ -109,9 +109,16 @@ export const getAvailableDonations = () => {
 // GET /api/donations/:id
 // -----------------------------------------------------
 
-export const getDonationById = (id) => {
+export const getDonationById = async(id) => {
   return API.get(`/donations/${id}`);
 };
+
+// Update donation status
+export const updateDonationStatus = (id, status) =>
+  API.patch(`/donations/${id}/status`, {
+    status,
+  });
+
 
 // -----------------------------------------------------
 // Delete Donation
@@ -132,7 +139,7 @@ export const deleteDonation = (id) => {
 // POST /api/claims
 // -----------------------------------------------------
 
-export const claimDonation = (donationId) => {
+export const claimDonation = async(donationId) => {
   return API.post("/claims", {
     donationId,
   });
@@ -143,16 +150,22 @@ export const claimDonation = (donationId) => {
 // GET /api/claims/my
 // -----------------------------------------------------
 
-export const getMyClaims = () => {
+export const getMyClaims = async() => {
   return API.get("/claims/my");
 };
+
+// Update claim status
+export const updateClaimStatus = (id, status) =>
+  API.patch(`/claims/${id}/status`, {
+    status,
+  });
 
 // -----------------------------------------------------
 // Get Claim By ID
 // GET /api/claims/:id
 // -----------------------------------------------------
 
-export const getClaimById = (id) => {
+export const getClaimById = async(id) => {
   return API.get(`/claims/${id}`);
 };
 
@@ -169,6 +182,19 @@ export const getClaimById = (id) => {
 export const getNGOs = () => {
   return API.get("/ngos");
 };
+
+
+// ==========================================
+// NEARBY NGO MATCHING
+// ==========================================
+
+export const getNearbyNGOs = (
+  donationId,
+  radius = 50
+) =>
+  API.get(
+    `/ngos/nearby?donationId=${donationId}&radius=${radius}`
+  );
 
 // -----------------------------------------------------
 // Get NGO By ID

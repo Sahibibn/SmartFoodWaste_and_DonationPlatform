@@ -49,6 +49,15 @@ import { fetchCurrentUser } from "./redux/authSlice";
 import DonorDonationDetails from "./Pages/Donor/DonationDetails";
 import NGODonationDetails from "./Pages/Ngo/DonationDetails";
 
+import Unauthorized from "./Pages/Unauthorized";
+import ClaimDetails from "./Pages/Ngo/ClaimDetails";
+
+// import AnalyticsDashboard
+//   from "./Pages/Analytics/AnalyticsDashboard";
+
+// import AvailableDonations from "./Pages/Ngo/AvailableDonation";
+  
+
 
 // =====================================================
 // LAYOUT
@@ -103,6 +112,8 @@ function App() {
 
         {/* DONOR */}
 
+        <Route element={<ProtectedRoute allowedRoles={["DONOR"]} />}></Route>
+
         <Route
           path="/dashboard"
           element={
@@ -149,7 +160,7 @@ function App() {
 
 
         {/* NGO */}
-
+        <Route element={<ProtectedRoute allowedRoles={["NGO"]} />}></Route>
         <Route
           path="/ngo-dashboard"
           element={
@@ -195,10 +206,27 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+            path="/claims/:id"
+            element={
+              <Layout>
+                <ClaimDetails />
+              </Layout>
+            }
+          />
 
         {/* ANALYTICS */}
-
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "DONOR",
+                "NGO",
+                "ADMIN",
+              ]}
+            />
+          }
+        ></Route>
         <Route
           path="/analytics"
           element={
@@ -207,6 +235,7 @@ function App() {
             </Layout>
           }
         />
+      
 
 
         {/* NGOs */}
@@ -249,6 +278,13 @@ function App() {
           path="/signup"
           element={<Signup />}
         />
+
+        <Route
+          path="/unauthorized"
+          element={<Unauthorized />}
+        />
+
+        
 
       </Routes>
     </>

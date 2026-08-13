@@ -2,11 +2,18 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import { getMyDonations } from "../../api/api";
+import {
+  getMyDonations,
+  deleteDonation,
+} from "../../api/api";
 
 const MyDonations = () => {
   const [donations, setDonations] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
+  const [deletingId, setDeletingId] =
+    useState(null);
 
   // ==========================================
   // LOAD DONATIONS
@@ -18,21 +25,14 @@ const MyDonations = () => {
 
       const response = await getMyDonations();
 
-      console.log(
-        "My Donations:",
-        response.data
-      );
-
       const data =
         response.data?.donations ||
-        response.data?.data ||
         response.data ||
         [];
 
       setDonations(
         Array.isArray(data) ? data : []
       );
-
     } catch (error) {
       console.error(
         "Failed to load donations:",
@@ -53,47 +53,61 @@ const MyDonations = () => {
   }, []);
 
   // ==========================================
-  // STATUS
+  // DELETE
   // ==========================================
 
-  const getStatusStyle = (status) => {
-    switch (status?.toUpperCase()) {
-      case "CLAIMED":
-        return "bg-blue-100 text-blue-700";
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this donation?"
+    );
 
-      case "COMPLETED":
-        return "bg-green-100 text-green-700";
+    if (!confirmed) return;
 
-      case "EXPIRED":
-        return "bg-red-100 text-red-700";
+    try {
+      setDeletingId(id);
 
-      case "CANCELLED":
-        return "bg-gray-100 text-gray-700";
+      await deleteDonation(id);
 
-      default:
-        return "bg-yellow-100 text-yellow-700";
+      setDonations((prev) =>
+        prev.filter(
+          (donation) => donation._id !== id
+        )
+      );
+
+      toast.success(
+        "Donation deleted successfully"
+      );
+    } catch (error) {
+      console.error(
+        "Delete donation error:",
+        error
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete donation"
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
   // ==========================================
-  // DATE
+  // LOADING
   // ==========================================
 
-  const formatDate = (date) => {
-    if (!date) return "N/A";
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-100">
 
-    return new Date(date).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
+        <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin" />
+
+      </div>
     );
-  };
+  }
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
 
       {/* HEADER */}
 
@@ -105,9 +119,8 @@ const MyDonations = () => {
             My Donations
           </h1>
 
-          <p className="text-gray-500 mt-1">
-            Track all the food donations you
-            have created.
+          <p className="text-gray-500 mt-2">
+            Manage the food donations you have created.
           </p>
 
         </div>
@@ -121,47 +134,34 @@ const MyDonations = () => {
 
       </div>
 
-      {/* LOADING */}
-
-      {loading && (
-
-        <div className="bg-white rounded-xl p-10 text-center shadow-sm">
-          <p className="text-gray-500">
-            Loading donations...
-          </p>
-        </div>
-
-      )}
-
       {/* EMPTY */}
 
-      {!loading && donations.length === 0 && (
+      {donations.length === 0 ? (
 
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+        <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
 
-          <h2 className="text-xl font-semibold text-gray-800">
-            No donations yet
+          <div className="text-5xl mb-4">
+            🍱
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-800">
+            No Donations Yet
           </h2>
 
-          <p className="text-gray-500 mt-2 mb-6">
-            Start helping reduce food waste by
-            creating your first donation.
+          <p className="text-gray-500 mt-2">
+            Create your first food donation.
           </p>
 
           <Link
             to="/create-donation"
-            className="inline-block bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold"
+            className="inline-block mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
           >
             Create Donation
           </Link>
 
         </div>
 
-      )}
-
-      {/* DONATIONS */}
-
-      {!loading && donations.length > 0 && (
+      ) : (
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
@@ -169,103 +169,112 @@ const MyDonations = () => {
 
             <div
               key={donation._id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden"
             >
 
-              {/* CARD HEADER */}
+              <div className="p-6">
 
-              <div className="p-5 border-b">
+                {/* TITLE */}
 
                 <div className="flex items-start justify-between gap-3">
 
-                  <h2 className="text-lg font-bold text-gray-800">
-                    {donation.title ||
-                      donation.foodName ||
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {donation.foodName ||
+                      donation.title ||
                       "Food Donation"}
                   </h2>
 
-                  <span
-                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(
-                      donation.status
-                    )}`}
-                  >
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                     {donation.status ||
-                      "PENDING"}
+                      "AVAILABLE"}
                   </span>
 
                 </div>
 
-              </div>
+                {/* DETAILS */}
 
-              {/* CARD BODY */}
+                <div className="mt-5 space-y-3">
 
-              <div className="p-5 space-y-3">
+                  <div className="flex justify-between gap-4">
 
-                <div className="flex justify-between">
+                    <span className="text-gray-500">
+                      Type
+                    </span>
 
-                  <span className="text-gray-500">
-                    Food Type
-                  </span>
+                    <span className="font-semibold text-gray-800 text-right">
+                      {donation.foodType || "N/A"}
+                    </span>
 
-                  <span className="font-medium text-gray-800">
-                    {donation.foodType || "N/A"}
-                  </span>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+
+                    <span className="text-gray-500">
+                      Quantity
+                    </span>
+
+                    <span className="font-semibold text-gray-800">
+                      {donation.quantity || "N/A"}
+                    </span>
+
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+
+                    <span className="text-gray-500">
+                      Location
+                    </span>
+
+                    <span className="font-semibold text-gray-800 text-right">
+                      {donation.location || "N/A"}
+                    </span>
+
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+
+                    <span className="text-gray-500">
+                      Expiry
+                    </span>
+
+                    <span className="font-semibold text-red-600">
+                      {donation.expiryDate
+                        ? new Date(
+                            donation.expiryDate
+                          ).toLocaleDateString()
+                        : "N/A"}
+                    </span>
+
+                  </div>
 
                 </div>
 
-                <div className="flex justify-between">
+                {/* ACTIONS */}
 
-                  <span className="text-gray-500">
-                    Quantity
-                  </span>
+                <div className="flex gap-3 mt-6">
 
-                  <span className="font-medium text-gray-800">
-                    {donation.quantity || "N/A"}{" "}
-                    {donation.unit || ""}
-                  </span>
+                  <Link
+                    to={`/my-donations/${donation._id}`}
+                    className="flex-1 text-center bg-green-50 hover:bg-green-100 text-green-700 py-2.5 rounded-lg font-semibold"
+                  >
+                    View
+                  </Link>
 
-                </div>
-
-                <div className="flex justify-between">
-
-                  <span className="text-gray-500">
-                    Expiry
-                  </span>
-
-                  <span className="font-medium text-gray-800">
-                    {formatDate(
-                      donation.expiryDate
-                    )}
-                  </span>
-
-                </div>
-
-                <div className="pt-2 border-t">
-
-                  <p className="text-sm text-gray-500">
-                    Created
-                  </p>
-
-                  <p className="text-sm font-medium text-gray-800">
-                    {formatDate(
-                      donation.createdAt
-                    )}
-                  </p>
+                  <button
+                    onClick={() =>
+                      handleDelete(donation._id)
+                    }
+                    disabled={
+                      deletingId === donation._id
+                    }
+                    className="flex-1 bg-red-50 hover:bg-red-100 disabled:bg-gray-100 text-red-600 disabled:text-gray-400 py-2.5 rounded-lg font-semibold"
+                  >
+                    {deletingId === donation._id
+                      ? "Deleting..."
+                      : "Delete"}
+                  </button>
 
                 </div>
-
-              </div>
-
-              {/* CARD FOOTER */}
-
-              <div className="p-5 bg-gray-50">
-
-                <Link
-                  to={`/my-donations/${donation._id}`}
-                  className="block text-center bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-semibold"
-                >
-                  View Details
-                </Link>
 
               </div>
 

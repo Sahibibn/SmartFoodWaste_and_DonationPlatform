@@ -1,171 +1,156 @@
-import React from "react";
 import { NavLink } from "react-router-dom";
-
-import {
-  LayoutDashboard,
-  PlusCircle,
-  Package,
-  Building2,
-  ClipboardList,
-  BarChart3,
-  Users,
-} from "lucide-react";
-
+import { useSelector } from "react-redux";
 
 const Sidebar = () => {
+  const { user } = useSelector(
+    (state) => state.auth
+  );
 
-  const donorLinks = [
-    {
-      name: "Dashboard",
-      path: "/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Create Donation",
-      path: "/create-donation",
-      icon: PlusCircle,
-    },
-    {
-      name: "My Donations",
-      path: "/my-donations",
-      icon: Package,
-    },
-  ];
+  const role = user?.role;
 
-
-  const ngoLinks = [
-    {
-      name: "NGO Dashboard",
-      path: "/ngo-dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Available Donations",
-      path: "/available-donations",
-      icon: Package,
-    },
-    {
-      name: "My Claims",
-      path: "/claims",
-      icon: ClipboardList,
-    },
-  ];
-
-
-  const commonLinks = [
-    {
-      name: "Analytics",
-      path: "/analytics",
-      icon: BarChart3,
-    },
-    {
-      name: "NGOs",
-      path: "/ngos",
-      icon: Users,
-    },
-  ];
-
+  // ==========================================
+  // COMMON LINK STYLE
+  // ==========================================
 
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+    `flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
       isActive
-        ? "bg-green-100 text-green-700 font-semibold"
-        : "text-gray-600 hover:bg-gray-100"
+        ? "bg-green-600 text-white"
+        : "text-gray-700 hover:bg-green-50 hover:text-green-700"
     }`;
 
-
   return (
-    <aside className="hidden md:block w-64 min-h-[calc(100vh-64px)] bg-white border-r border-gray-200">
+    <aside className="hidden md:flex w-64 min-h-[calc(100vh-64px)] bg-white border-r border-gray-200 flex-col">
 
-      <div className="p-4">
+      {/* ======================================
+          LOGO
+      ====================================== */}
 
-        {/* Donor Section */}
-        <p className="text-xs font-semibold text-gray-400 uppercase px-4 mb-2">
-          Donor
-        </p>
+      <div className="p-6 border-b border-gray-100">
 
-        <div className="space-y-1">
+        <h2 className="text-xl font-bold text-green-600">
+          Smart Food Waste
+        </h2>
 
-          {donorLinks.map((link) => {
-
-            const Icon = link.icon;
-
-            return (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={linkClass}
-              >
-                <Icon size={19} />
-
-                <span>
-                  {link.name}
-                </span>
-              </NavLink>
-            );
-          })}
-
-        </div>
-
-
-        {/* NGO Section */}
-        <p className="text-xs font-semibold text-gray-400 uppercase px-4 mt-7 mb-2">
-          NGO
-        </p>
-
-        <div className="space-y-1">
-
-          {ngoLinks.map((link) => {
-
-            const Icon = link.icon;
-
-            return (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={linkClass}
-              >
-                <Icon size={19} />
-
-                <span>
-                  {link.name}
-                </span>
-              </NavLink>
-            );
-          })}
-
-        </div>
-
-
-        {/* Other Section */}
-        <p className="text-xs font-semibold text-gray-400 uppercase px-4 mt-7 mb-2">
-          Other
-        </p>
-
-        <div className="space-y-1">
-
-          {commonLinks.map((link) => {
-
-            const Icon = link.icon;
-
-            return (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={linkClass}
-              >
-                <Icon size={19} />
-
-                <span>
-                  {link.name}
-                </span>
-              </NavLink>
-            );
-          })}
-
-        </div>
+        {user && (
+          <p className="text-xs text-gray-500 mt-1">
+            {user.role}
+          </p>
+        )}
 
       </div>
+
+      {/* ======================================
+          NAVIGATION
+      ====================================== */}
+
+      <nav className="p-4 space-y-2 flex-1">
+
+        {/* ====================================
+            DONOR LINKS
+        ==================================== */}
+
+        {role === "DONOR" && (
+          <>
+            <NavLink
+              to="/dashboard"
+              className={linkClass}
+            >
+              <span>📊</span>
+              <span>Dashboard</span>
+            </NavLink>
+
+            <NavLink
+              to="/create-donation"
+              className={linkClass}
+            >
+              <span>➕</span>
+              <span>Create Donation</span>
+            </NavLink>
+
+            <NavLink
+              to="/my-donations"
+              className={linkClass}
+            >
+              <span>🍱</span>
+              <span>My Donations</span>
+            </NavLink>
+          </>
+        )}
+
+        {/* ====================================
+            NGO LINKS
+        ==================================== */}
+
+        {role === "NGO" && (
+          <>
+            <NavLink
+              to="/ngo-dashboard"
+              className={linkClass}
+            >
+              <span>📊</span>
+              <span>Dashboard</span>
+            </NavLink>
+
+            <NavLink
+              to="/available-donations"
+              className={linkClass}
+            >
+              <span>🍱</span>
+              <span>Available Donations</span>
+            </NavLink>
+
+            <NavLink
+              to="/claims"
+              className={linkClass}
+            >
+              <span>📦</span>
+              <span>My Claims</span>
+            </NavLink>
+          </>
+        )}
+
+        {/* ====================================
+            ADMIN
+        ==================================== */}
+
+        {role === "ADMIN" && (
+          <>
+            <NavLink
+              to="/analytics"
+              className={linkClass}
+            >
+              <span>📊</span>
+              <span>Analytics</span>
+            </NavLink>
+          </>
+        )}
+
+        {/* ====================================
+            ANALYTICS
+        ==================================== */}
+
+        {role === "DONOR" && (
+          <NavLink
+            to="/analytics"
+            className={linkClass}
+          >
+            <span>📈</span>
+            <span>Analytics</span>
+          </NavLink>
+        )}
+
+        {role === "NGO" && (
+          <NavLink
+            to="/analytics"
+            className={linkClass}
+          >
+            <span>📈</span>
+            <span>Analytics</span>
+          </NavLink>
+        )}
+
+      </nav>
 
     </aside>
   );

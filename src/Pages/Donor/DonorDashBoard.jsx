@@ -1,269 +1,185 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 import { getMyDonations } from "../../api/api";
 
 const DonorDashboard = () => {
-  const { user } = useSelector((state) => state.auth);
+  const [donations, setDonations] =
+    useState([]);
 
-  const [donations, setDonations] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // ==========================================
-  // FETCH DONATIONS
-  // ==========================================
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    const loadDonations = async () => {
+    const loadDashboard = async () => {
       try {
-        setLoading(true);
-
-        const response = await getMyDonations();
-
-        console.log("My Donations:", response.data);
+        const response =
+          await getMyDonations();
 
         const data =
           response.data?.donations ||
-          response.data?.data ||
           response.data ||
           [];
 
-        setDonations(Array.isArray(data) ? data : []);
+        setDonations(
+          Array.isArray(data) ? data : []
+        );
       } catch (error) {
         console.error(
-          "Failed to load donations:",
+          "Dashboard error:",
           error
         );
 
         toast.error(
           error.response?.data?.message ||
-            "Failed to load donations"
+            "Failed to load dashboard"
         );
       } finally {
         setLoading(false);
       }
     };
 
-    loadDonations();
+    loadDashboard();
   }, []);
 
   // ==========================================
-  // STATS
+  // STATISTICS
   // ==========================================
 
-  const totalDonations = donations.length;
+  const totalDonations =
+    donations.length;
 
-  const pendingDonations = donations.filter(
-    (donation) =>
-      donation.status?.toUpperCase() === "PENDING"
-  ).length;
+  const availableDonations =
+    donations.filter(
+      (item) =>
+        String(item.status || "AVAILABLE")
+          .toUpperCase() === "AVAILABLE"
+    ).length;
 
-  const claimedDonations = donations.filter(
-    (donation) =>
-      donation.status?.toUpperCase() === "CLAIMED"
-  ).length;
+  const claimedDonations =
+    donations.filter(
+      (item) =>
+        String(item.status || "")
+          .toUpperCase() === "CLAIMED"
+    ).length;
 
-  const completedDonations = donations.filter(
-    (donation) =>
-      donation.status?.toUpperCase() === "COMPLETED"
-  ).length;
-
-  // ==========================================
-  // STATUS COLOR
-  // ==========================================
-
-  const getStatusStyle = (status) => {
-    switch (status?.toUpperCase()) {
-      case "CLAIMED":
-        return "bg-blue-100 text-blue-700";
-
-      case "COMPLETED":
-        return "bg-green-100 text-green-700";
-
-      case "EXPIRED":
-        return "bg-red-100 text-red-700";
-
-      case "PENDING":
-      default:
-        return "bg-yellow-100 text-yellow-700";
-    }
-  };
+  const expiredDonations =
+    donations.filter(
+      (item) =>
+        String(item.status || "")
+          .toUpperCase() === "EXPIRED"
+    ).length;
 
   // ==========================================
-  // FORMAT DATE
+  // LOADING
   // ==========================================
 
-  const formatDate = (date) => {
-    if (!date) return "N/A";
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-100">
 
-    return new Date(date).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
+        <div className="w-10 h-10 border-4 border-green-200 border-t-green-600 rounded-full animate-spin" />
+
+      </div>
     );
-  };
-
-  // ==========================================
-  // UI
-  // ==========================================
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto">
 
-      {/* ======================================
-          HEADER
-      ====================================== */}
+      {/* HEADER */}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
 
         <div>
-          <p className="text-gray-500">
-            Welcome back,
-          </p>
 
           <h1 className="text-3xl font-bold text-gray-800">
-            {user?.name || "Donor"}
+            Donor Dashboard
           </h1>
 
-          <p className="text-gray-500 mt-1">
-            Help reduce food waste by sharing
-            surplus food.
+          <p className="text-gray-500 mt-2">
+            Manage your food donations and help reduce food waste.
           </p>
+
         </div>
 
         <Link
           to="/create-donation"
-          className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold text-center transition"
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold text-center"
         >
           + Create Donation
         </Link>
 
       </div>
 
-      {/* ======================================
-          STAT CARDS
-      ====================================== */}
+      {/* STATISTICS */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
 
         {/* TOTAL */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
 
-          <p className="text-sm text-gray-500">
+          <p className="text-gray-500">
             Total Donations
           </p>
 
           <h2 className="text-3xl font-bold text-gray-800 mt-2">
-            {loading ? "..." : totalDonations}
+            {totalDonations}
           </h2>
 
         </div>
 
-        {/* PENDING */}
+        {/* AVAILABLE */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
 
-          <p className="text-sm text-gray-500">
-            Pending
+          <p className="text-gray-500">
+            Available
           </p>
 
-          <h2 className="text-3xl font-bold text-yellow-600 mt-2">
-            {loading ? "..." : pendingDonations}
+          <h2 className="text-3xl font-bold text-green-600 mt-2">
+            {availableDonations}
           </h2>
 
         </div>
 
         {/* CLAIMED */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
 
-          <p className="text-sm text-gray-500">
+          <p className="text-gray-500">
             Claimed
           </p>
 
           <h2 className="text-3xl font-bold text-blue-600 mt-2">
-            {loading ? "..." : claimedDonations}
+            {claimedDonations}
           </h2>
 
         </div>
 
-        {/* COMPLETED */}
+        {/* EXPIRED */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
 
-          <p className="text-sm text-gray-500">
-            Completed
+          <p className="text-gray-500">
+            Expired
           </p>
 
-          <h2 className="text-3xl font-bold text-green-600 mt-2">
-            {loading ? "..." : completedDonations}
+          <h2 className="text-3xl font-bold text-red-600 mt-2">
+            {expiredDonations}
           </h2>
 
         </div>
 
       </div>
 
-      {/* ======================================
-          QUICK ACTIONS
-      ====================================== */}
+      {/* RECENT DONATIONS */}
 
-      <div>
+      <div className="bg-white rounded-2xl shadow-sm p-6">
 
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Quick Actions
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-          <Link
-            to="/create-donation"
-            className="bg-green-50 border border-green-100 rounded-xl p-6 hover:bg-green-100 transition"
-          >
-
-            <h3 className="text-lg font-bold text-green-700">
-              Create Donation
-            </h3>
-
-            <p className="text-sm text-gray-600 mt-2">
-              Share your surplus food with NGOs
-              and people in need.
-            </p>
-
-          </Link>
-
-          <Link
-            to="/my-donations"
-            className="bg-blue-50 border border-blue-100 rounded-xl p-6 hover:bg-blue-100 transition"
-          >
-
-            <h3 className="text-lg font-bold text-blue-700">
-              My Donations
-            </h3>
-
-            <p className="text-sm text-gray-600 mt-2">
-              View and track all your food
-              donations.
-            </p>
-
-          </Link>
-
-        </div>
-
-      </div>
-
-      {/* ======================================
-          RECENT DONATIONS
-      ====================================== */}
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between mb-6">
 
           <h2 className="text-xl font-bold text-gray-800">
             Recent Donations
@@ -271,105 +187,84 @@ const DonorDashboard = () => {
 
           <Link
             to="/my-donations"
-            className="text-green-600 hover:text-green-700 font-medium text-sm"
+            className="text-green-600 font-semibold hover:underline"
           >
             View All
           </Link>
 
         </div>
 
-        <div className="p-6">
+        {donations.length === 0 ? (
 
-          {loading ? (
+          <div className="text-center py-10">
 
-            <div className="text-center py-10 text-gray-500">
-              Loading donations...
-            </div>
+            <p className="text-gray-500">
+              You haven't created any donations yet.
+            </p>
 
-          ) : donations.length === 0 ? (
+            <Link
+              to="/create-donation"
+              className="inline-block mt-4 text-green-600 font-semibold"
+            >
+              Create your first donation →
+            </Link>
 
-            <div className="text-center py-10">
+          </div>
 
-              <p className="text-gray-500 mb-4">
-                You haven't created any donations
-                yet.
-              </p>
+        ) : (
 
-              <Link
-                to="/create-donation"
-                className="inline-block bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium"
-              >
-                Create Your First Donation
-              </Link>
+          <div className="space-y-4">
 
-            </div>
+            {donations
+              .slice(0, 5)
+              .map((donation) => (
 
-          ) : (
+                <div
+                  key={donation._id}
+                  className="border border-gray-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                >
 
-            <div className="space-y-4">
+                  <div>
 
-              {donations
-                .slice(0, 5)
-                .map((donation) => (
+                    <h3 className="font-bold text-gray-800">
+                      {donation.foodName ||
+                        donation.title ||
+                        "Food Donation"}
+                    </h3>
 
-                  <div
-                    key={donation._id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border rounded-lg p-4"
-                  >
-
-                    <div>
-
-                      <h3 className="font-semibold text-gray-800">
-                        {donation.title ||
-                          donation.foodName ||
-                          "Food Donation"}
-                      </h3>
-
-                      <p className="text-sm text-gray-500 mt-1">
-                        Quantity:{" "}
-                        {donation.quantity || "N/A"}
-                      </p>
-
-                      <p className="text-xs text-gray-400 mt-1">
-                        Created:{" "}
-                        {formatDate(
-                          donation.createdAt
-                        )}
-                      </p>
-
-                    </div>
-
-                    <div className="flex items-center gap-3">
-
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(
-                          donation.status
-                        )}`}
-                      >
-                        {donation.status ||
-                          "PENDING"}
-                      </span>
-
-                      {donation._id && (
-                        <Link
-                          to={`/my-donations/${donation._id}`}
-                          className="text-green-600 hover:text-green-700 text-sm font-medium"
-                        >
-                          View
-                        </Link>
-                      )}
-
-                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {donation.quantity ||
+                        "N/A"}{" "}
+                      •{" "}
+                      {donation.foodType ||
+                        "N/A"}
+                    </p>
 
                   </div>
 
-                ))}
+                  <div className="flex items-center gap-4">
 
-            </div>
+                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                      {donation.status ||
+                        "AVAILABLE"}
+                    </span>
 
-          )}
+                    <Link
+                      to={`/my-donations/${donation._id}`}
+                      className="text-green-600 font-semibold"
+                    >
+                      View
+                    </Link>
 
-        </div>
+                  </div>
+
+                </div>
+
+              ))}
+
+          </div>
+
+        )}
 
       </div>
 
