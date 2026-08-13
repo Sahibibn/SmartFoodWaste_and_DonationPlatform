@@ -1,135 +1,103 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import {
   getDonationById,
-  deleteDonation,
+  getNGOs,
 } from "../../api/api";
 
 import RecommendedNGO from "../../Components/RecommendedNGO";
+import DonationMap from "../../Components/DonationMap";
 
 const DonationDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  // ==========================================
+  // STATES
+  // ==========================================
 
   const [donation, setDonation] = useState(null);
 
+  // NGO STATE
+  const [ngos, setNgos] = useState([]);
+
   const [loading, setLoading] = useState(true);
-
-  const [deleting, setDeleting] = useState(false);
-
   const [error, setError] = useState("");
 
   // ==========================================
-  // LOAD DONATION
-  // ==========================================
-
-  const loadDonation = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await getDonationById(id);
-
-      console.log(
-        "Donation details:",
-        response.data
-      );
-
-      /*
-        Backend may return:
-
-        {
-          donation: {...}
-        }
-
-        OR
-
-        {
-          data: {...}
-        }
-
-        OR
-
-        directly {...}
-      */
-
-      const data =
-        response.data?.donation ||
-        response.data?.data ||
-        response.data;
-
-      setDonation(data);
-
-    } catch (error) {
-      console.error(
-        "Failed to load donation:",
-        error
-      );
-
-      const message =
-        error.response?.data?.message ||
-        "Failed to load donation details";
-
-      setError(message);
-
-      toast.error(message);
-
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==========================================
-  // LOAD ON PAGE OPEN
+  // LOAD DONATION + NGOs
   // ==========================================
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // ======================================
+        // GET DONATION
+        // ======================================
+
+        const donationResponse =
+          await getDonationById(id);
+
+        console.log(
+          "Donation Response:",
+          donationResponse.data
+        );
+
+        const donationData =
+          donationResponse.data?.donation ||
+          donationResponse.data;
+
+        setDonation(donationData);
+
+        // ======================================
+        // GET NGOs
+        // ======================================
+
+        const ngoResponse =
+          await getNGOs();
+
+        console.log(
+          "NGO Response:",
+          ngoResponse.data
+        );
+
+        const ngoData =
+          ngoResponse.data?.ngos ||
+          ngoResponse.data;
+
+        setNgos(
+          Array.isArray(ngoData)
+            ? ngoData
+            : []
+        );
+
+      } catch (err) {
+        console.error(
+          "Failed to load donation details:",
+          err
+        );
+
+        const message =
+          err.response?.data?.message ||
+          "Failed to load donation details";
+
+        setError(message);
+
+        toast.error(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (id) {
-      loadDonation();
+      loadData();
     }
   }, [id]);
-
-  // ==========================================
-  // DELETE DONATION
-  // ==========================================
-
-  const handleDelete = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this donation?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setDeleting(true);
-
-      await deleteDonation(id);
-
-      toast.success(
-        "Donation deleted successfully"
-      );
-
-      window.location.href =
-        "/my-donations";
-
-    } catch (error) {
-      console.error(
-        "Delete donation error:",
-        error
-      );
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to delete donation"
-      );
-
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   // ==========================================
   // LOADING
@@ -137,9 +105,30 @@ const DonationDetails = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
+      <div className="max-w-5xl mx-auto">
 
-        <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin" />
+        <div className="flex items-center gap-3 mb-6">
+
+          <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+
+          <div className="h-7 bg-gray-200 rounded w-56 animate-pulse" />
+
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-pulse">
+
+          <div className="h-8 bg-gray-200 rounded w-1/2 mb-6" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className="h-20 bg-gray-200 rounded-lg" />
+            <div className="h-20 bg-gray-200 rounded-lg" />
+            <div className="h-20 bg-gray-200 rounded-lg" />
+            <div className="h-20 bg-gray-200 rounded-lg" />
+
+          </div>
+
+        </div>
 
       </div>
     );
@@ -149,31 +138,41 @@ const DonationDetails = () => {
   // ERROR
   // ==========================================
 
-  if (error || !donation) {
+  if (error) {
     return (
-      <div className="max-w-xl mx-auto py-20">
+      <div className="max-w-5xl mx-auto">
 
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+        <button
+          onClick={() =>
+            navigate("/my-donations")
+          }
+          className="mb-6 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          ← Back to My Donations
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-8 text-center">
 
           <div className="text-5xl mb-4">
             ⚠️
           </div>
 
-          <h2 className="text-2xl font-bold text-red-700">
-            Donation Not Found
+          <h2 className="text-xl font-bold text-gray-800">
+            Unable to load donation
           </h2>
 
-          <p className="text-red-600 mt-2">
-            {error ||
-              "Unable to find this donation."}
+          <p className="text-gray-500 mt-2">
+            {error}
           </p>
 
-          <Link
-            to="/my-donations"
-            className="inline-block mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+          <button
+            onClick={() =>
+              window.location.reload()
+            }
+            className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-semibold"
           >
-            Back to My Donations
-          </Link>
+            Try Again
+          </button>
 
         </div>
 
@@ -182,50 +181,86 @@ const DonationDetails = () => {
   }
 
   // ==========================================
-  // DONATION DATA
+  // DONATION NOT FOUND
   // ==========================================
 
-  const donationId =
-    donation._id || donation.id;
+  if (!donation) {
+    return (
+      <div className="max-w-5xl mx-auto">
+
+        <button
+          onClick={() =>
+            navigate("/my-donations")
+          }
+          className="mb-6 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          ← Back to My Donations
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+
+          <div className="text-5xl mb-4">
+            🍱
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-800">
+            Donation not found
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+            This donation may have been deleted
+            or does not exist.
+          </p>
+
+        </div>
+
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VALUES
+  // ==========================================
 
   const foodName =
     donation.foodName ||
     donation.title ||
-    donation.name ||
+    donation.foodType ||
     "Food Donation";
 
-  const foodType =
-    donation.foodType ||
+  const category =
     donation.category ||
-    donation.type ||
-    "Food";
+    donation.foodCategory ||
+    "Not specified";
 
   const quantity =
     donation.quantity ??
     donation.amount ??
-    "N/A";
+    "Not specified";
 
   const unit =
     donation.unit || "";
-
-  const pickupLocation =
-    donation.pickupLocation ||
-    donation.location ||
-    donation.address ||
-    "Location not specified";
 
   const description =
     donation.description ||
     "No description provided.";
 
-  const expiryDate =
-    donation.expiryDate ||
-    donation.expiresAt ||
-    donation.expiry;
+  const address =
+    donation.address ||
+    donation.location?.address ||
+    "Address not available";
 
   const status =
     donation.status ||
     "AVAILABLE";
+
+  const expiryDate =
+    donation.expiryDate ||
+    donation.expiry ||
+    donation.expiryAt;
+
+  const createdAt =
+    donation.createdAt;
 
   // ==========================================
   // FORMAT DATE
@@ -233,16 +268,28 @@ const DonationDetails = () => {
 
   const formatDate = (date) => {
     if (!date) {
-      return "Not specified";
+      return "Not available";
     }
 
-    const parsedDate = new Date(date);
+    const parsedDate =
+      new Date(date);
 
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "Not specified";
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return "Not available";
     }
 
-    return parsedDate.toLocaleString();
+    return parsedDate.toLocaleDateString(
+      "en-IN",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   // ==========================================
@@ -250,110 +297,69 @@ const DonationDetails = () => {
   // ==========================================
 
   const getStatusStyle = () => {
-    const normalizedStatus =
-      String(status).toUpperCase();
+    switch (
+      status.toUpperCase()
+    ) {
+      case "AVAILABLE":
+        return "bg-green-100 text-green-700";
 
-    if (normalizedStatus === "AVAILABLE") {
-      return "bg-green-100 text-green-700";
+      case "CLAIMED":
+        return "bg-blue-100 text-blue-700";
+
+      case "COMPLETED":
+        return "bg-purple-100 text-purple-700";
+
+      case "EXPIRED":
+        return "bg-red-100 text-red-700";
+
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-600";
+
+      default:
+        return "bg-yellow-100 text-yellow-700";
     }
-
-    if (normalizedStatus === "CLAIMED") {
-      return "bg-blue-100 text-blue-700";
-    }
-
-    if (normalizedStatus === "EXPIRED") {
-      return "bg-red-100 text-red-700";
-    }
-
-    if (normalizedStatus === "COMPLETED") {
-      return "bg-purple-100 text-purple-700";
-    }
-
-    return "bg-gray-100 text-gray-700";
   };
 
   // ==========================================
-  // EXPIRY INFORMATION
+  // CHECK EXPIRY
   // ==========================================
 
-  const getExpiryInfo = () => {
+  const isExpired = () => {
     if (!expiryDate) {
-      return {
-        text: "Expiry not specified",
-        style: "bg-gray-100 text-gray-600",
-      };
+      return false;
     }
 
-    const expiry = new Date(expiryDate);
-
-    if (Number.isNaN(expiry.getTime())) {
-      return {
-        text: "Expiry not specified",
-        style: "bg-gray-100 text-gray-600",
-      };
-    }
-
-    const now = new Date();
-
-    const hours =
-      (expiry.getTime() -
-        now.getTime()) /
-      (1000 * 60 * 60);
-
-    if (hours <= 0) {
-      return {
-        text: "Expired",
-        style: "bg-red-100 text-red-700",
-      };
-    }
-
-    if (hours <= 24) {
-      return {
-        text: "Expires within 24 hours",
-        style:
-          "bg-orange-100 text-orange-700",
-      };
-    }
-
-    if (hours <= 48) {
-      return {
-        text: "Expires within 48 hours",
-        style:
-          "bg-yellow-100 text-yellow-700",
-      };
-    }
-
-    return {
-      text: "Fresh",
-      style: "bg-green-100 text-green-700",
-    };
+    return (
+      new Date(expiryDate) <
+      new Date()
+    );
   };
-
-  const expiryInfo = getExpiryInfo();
 
   // ==========================================
   // UI
   // ==========================================
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto">
 
       {/* ======================================
           BACK BUTTON
       ====================================== */}
 
-      <Link
-        to="/my-donations"
-        className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
+      <button
+        onClick={() =>
+          navigate("/my-donations")
+        }
+        className="mb-6 flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium transition"
       >
         ← Back to My Donations
-      </Link>
+      </button>
 
       {/* ======================================
           PAGE HEADER
       ====================================== */}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
 
         <div>
 
@@ -362,7 +368,8 @@ const DonationDetails = () => {
           </h1>
 
           <p className="text-gray-500 mt-1">
-            View information about your food donation.
+            View complete information about
+            your food donation.
           </p>
 
         </div>
@@ -379,196 +386,198 @@ const DonationDetails = () => {
           MAIN DONATION CARD
       ====================================== */}
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-        {/* HEADER */}
+        {/* CARD HEADER */}
 
-        <div className="bg-green-50 p-6 md:p-8">
+        <div className="bg-green-50 border-b border-green-100 p-6">
 
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="flex items-start gap-4">
 
-            <div>
+            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">
+              🍱
+            </div>
 
-              <p className="text-sm text-green-600 font-semibold uppercase tracking-wide">
-                Food Donation
-              </p>
+            <div className="flex-1">
 
-              <h2 className="text-3xl font-bold text-gray-800 mt-2">
+              <h2 className="text-2xl font-bold text-gray-800">
                 {foodName}
               </h2>
 
-              <p className="text-gray-500 mt-2">
-                {foodType}
+              <p className="text-gray-500 mt-1">
+                Donation ID:{" "}
+                <span className="font-mono text-xs">
+                  {donation._id}
+                </span>
               </p>
 
             </div>
-
-            <span
-              className={`w-fit px-4 py-2 rounded-full text-sm font-semibold ${expiryInfo.style}`}
-            >
-              {expiryInfo.text}
-            </span>
 
           </div>
 
         </div>
 
-        {/* DETAILS */}
+        {/* ====================================
+            DONATION INFORMATION
+        ==================================== */}
 
-        <div className="p-6 md:p-8">
+        <div className="p-6">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-5">
+            Food Information
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {/* CATEGORY */}
+
+            <div className="bg-gray-50 rounded-xl p-4">
+
+              <p className="text-xs text-gray-500 uppercase font-semibold">
+                Category
+              </p>
+
+              <p className="font-semibold text-gray-800 mt-2">
+                {category}
+              </p>
+
+            </div>
 
             {/* QUANTITY */}
 
-            <div className="border border-gray-200 rounded-xl p-5">
+            <div className="bg-gray-50 rounded-xl p-4">
 
-              <p className="text-sm text-gray-500">
+              <p className="text-xs text-gray-500 uppercase font-semibold">
                 Quantity
               </p>
 
-              <p className="text-2xl font-bold text-gray-800 mt-2">
+              <p className="font-semibold text-gray-800 mt-2">
                 {quantity} {unit}
               </p>
 
             </div>
 
-            {/* FOOD TYPE */}
+            {/* CREATED */}
 
-            <div className="border border-gray-200 rounded-xl p-5">
+            <div className="bg-gray-50 rounded-xl p-4">
 
-              <p className="text-sm text-gray-500">
-                Food Type
+              <p className="text-xs text-gray-500 uppercase font-semibold">
+                Created
               </p>
 
-              <p className="text-lg font-bold text-gray-800 mt-2">
-                {foodType}
-              </p>
-
-            </div>
-
-            {/* LOCATION */}
-
-            <div className="border border-gray-200 rounded-xl p-5">
-
-              <p className="text-sm text-gray-500">
-                📍 Pickup Location
-              </p>
-
-              <p className="text-lg font-semibold text-gray-800 mt-2">
-                {pickupLocation}
+              <p className="font-semibold text-gray-800 mt-2">
+                {formatDate(
+                  createdAt
+                )}
               </p>
 
             </div>
 
             {/* EXPIRY */}
 
-            <div className="border border-gray-200 rounded-xl p-5">
+            <div
+              className={`rounded-xl p-4 ${
+                isExpired()
+                  ? "bg-red-50"
+                  : "bg-gray-50"
+              }`}
+            >
 
-              <p className="text-sm text-gray-500">
-                ⏰ Expiry Date
+              <p className="text-xs text-gray-500 uppercase font-semibold">
+                Expiry
               </p>
 
-              <p className="text-lg font-semibold text-gray-800 mt-2">
-                {formatDate(expiryDate)}
+              <p
+                className={`font-semibold mt-2 ${
+                  isExpired()
+                    ? "text-red-600"
+                    : "text-gray-800"
+                }`}
+              >
+                {formatDate(
+                  expiryDate
+                )}
               </p>
 
             </div>
 
           </div>
 
-          {/* ====================================
-              DESCRIPTION
-          ==================================== */}
+        </div>
 
-          <div className="mt-6 border border-gray-200 rounded-xl p-5">
+        {/* ====================================
+            DESCRIPTION
+        ==================================== */}
 
-            <p className="text-sm text-gray-500">
-              Description
-            </p>
+        <div className="px-6 pb-6">
 
-            <p className="text-gray-700 mt-2 leading-relaxed">
+          <h3 className="text-lg font-bold text-gray-800 mb-3">
+            Description
+          </h3>
+
+          <div className="bg-gray-50 rounded-xl p-5">
+
+            <p className="text-gray-600 leading-relaxed">
               {description}
             </p>
 
           </div>
 
-          {/* ====================================
-              COORDINATES
-          ==================================== */}
+        </div>
 
-          {(donation.latitude !==
-            undefined ||
-            donation.longitude !==
-              undefined) && (
+        {/* ====================================
+            LOCATION
+        ==================================== */}
 
-            <div className="mt-6">
+        <div className="px-6 pb-6">
 
-              <h3 className="text-lg font-bold text-gray-800 mb-3">
-                Pickup Coordinates
-              </h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-3">
+            Donation Location
+          </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-xl p-5">
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="flex gap-3">
 
-                  <p className="text-sm text-gray-500">
-                    Latitude
-                  </p>
+              <div className="text-2xl">
+                📍
+              </div>
 
-                  <p className="font-semibold text-gray-800 mt-1">
-                    {donation.latitude ??
-                      "Not available"}
-                  </p>
+              <div>
 
-                </div>
+                <p className="font-semibold text-gray-800">
+                  Pickup Location
+                </p>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-
-                  <p className="text-sm text-gray-500">
-                    Longitude
-                  </p>
-
-                  <p className="font-semibold text-gray-800 mt-1">
-                    {donation.longitude ??
-                      "Not available"}
-                  </p>
-
-                </div>
+                <p className="text-gray-500 mt-1">
+                  {address}
+                </p>
 
               </div>
 
             </div>
 
-          )}
+            {/* COORDINATES */}
 
-          {/* ====================================
-              ACTIONS
-          ==================================== */}
+            {donation.location
+              ?.latitude !==
+              undefined &&
+              donation.location
+                ?.longitude !==
+                undefined && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
 
-          <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t">
+                  <p className="text-xs text-gray-500">
+                    Coordinates
+                  </p>
 
-            <Link
-              to="/my-donations"
-              className="w-full sm:w-auto text-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-lg font-semibold"
-            >
-              Back
-            </Link>
+                  <p className="font-mono text-sm text-gray-700 mt-1">
+                    {donation.location.latitude},{" "}
+                    {donation.location.longitude}
+                  </p>
 
-            {String(status).toUpperCase() ===
-              "AVAILABLE" && (
-
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold"
-              >
-                {deleting
-                  ? "Deleting..."
-                  : "Delete Donation"}
-              </button>
-
-            )}
+                </div>
+              )}
 
           </div>
 
@@ -577,14 +586,59 @@ const DonationDetails = () => {
       </div>
 
       {/* ======================================
-          RECOMMENDED NGOS
+          MAP
       ====================================== */}
 
-      {donationId && (
-        <RecommendedNGO
-          donationId={donationId}
+      <div className="mt-6">
+
+        <DonationMap
+          donation={donation}
+          ngos={ngos}
         />
-      )}
+
+      </div>
+
+      {/* ======================================
+          RECOMMENDED NGOs
+      ====================================== */}
+
+      <div className="mt-6">
+
+        <RecommendedNGO
+          donationId={donation._id}
+        />
+
+      </div>
+
+      {/* ======================================
+          FOOTER INFORMATION
+      ====================================== */}
+
+      <div className="mt-6 mb-8 bg-blue-50 border border-blue-100 rounded-xl p-5">
+
+        <div className="flex gap-3">
+
+          <div className="text-xl">
+            💡
+          </div>
+
+          <div>
+
+            <h3 className="font-semibold text-blue-800">
+              Smart Recommendation
+            </h3>
+
+            <p className="text-sm text-blue-700 mt-1">
+              Recommended NGOs are ranked based
+              on their distance from your donation
+              location.
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </div>
   );

@@ -183,7 +183,9 @@ export const getNGOs = () => {
   return API.get("/ngos");
 };
 
-
+// Create NGO profile
+export const createNGO = (data) =>
+  API.post("/ngos", data);
 // ==========================================
 // NEARBY NGO MATCHING
 // ==========================================
