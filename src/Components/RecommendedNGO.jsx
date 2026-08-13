@@ -1,71 +1,195 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import { getNearbyNGOs } from "../api/api";
+import {
+  getNGOs,
+  getDonationById,
+} from "../api/api";
 
-const RecommendedNGO = ({
-  donationId,
-}) => {
+const RecommendedNGO = ({ donationId }) => {
   const [ngos, setNgos] = useState([]);
+  const [donation, setDonation] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // ==========================================
-  // LOAD NEARBY NGOS
+  // HAVERSINE DISTANCE
   // ==========================================
 
-  const loadNearbyNGOs = async () => {
-    if (!donationId) {
-      setLoading(false);
-      return;
-    }
+  const calculateDistance = (
+    lat1,
+    lon1,
+    lat2,
+    lon2
+  ) => {
+    const earthRadius = 6371;
 
-    try {
-      setLoading(true);
-      setError("");
+    const dLat =
+      ((lat2 - lat1) * Math.PI) / 180;
 
-      const response =
-        await getNearbyNGOs(
-          donationId,
-          50
-        );
+    const dLon =
+      ((lon2 - lon1) * Math.PI) / 180;
 
-      const data =
-        response.data?.ngos ||
-        response.data?.data ||
-        [];
+    const a =
+      Math.sin(dLat / 2) *
+        Math.sin(dLat / 2) +
+      Math.cos(
+        (lat1 * Math.PI) / 180
+      ) *
+        Math.cos(
+          (lat2 * Math.PI) / 180
+        ) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
 
-      setNgos(
-        Array.isArray(data)
-          ? data
-          : []
+    const c =
+      2 *
+      Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
       );
 
-    } catch (error) {
-      console.error(
-        "Nearby NGO error:",
-        error
-      );
-
-      const message =
-        error.response?.data?.message ||
-        "Unable to find nearby NGOs";
-
-      setError(message);
-
-      toast.error(message);
-
-    } finally {
-      setLoading(false);
-    }
+    return earthRadius * c;
   };
 
+  // ==========================================
+  // GET NGO COORDINATES
+  // ==========================================
+
+  const getNGOLocation = (ngo) => {
+    const latitude =
+      ngo?.location?.latitude ??
+      ngo?.latitude;
+
+    const longitude =
+      ngo?.location?.longitude ??
+      ngo?.longitude;
+
+    if (
+      latitude === undefined ||
+      longitude === undefined
+    ) {
+      return null;
+    }
+
+    return {
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+    };
+  };
+
+  // ==========================================
+  // LOAD RECOMMENDATIONS
+  // ==========================================
+
   useEffect(() => {
-    loadNearbyNGOs();
+    const loadRecommendations = async () => {
+      if (!donationId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+
+        // Get donation
+        const donationResponse =
+          await getDonationById(donationId);
+
+        const donationData =
+          donationResponse.data?.donation ||
+          donationResponse.data;
+
+        setDonation(donationData);
+
+        // Donation location
+        const donationLat = Number(
+          donationData?.location?.latitude
+        );
+
+        const donationLng = Number(
+          donationData?.location?.longitude
+        );
+
+        if (
+          !Number.isFinite(donationLat) ||
+          !Number.isFinite(donationLng)
+        ) {
+          setError(
+            "Donation location is not available."
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        // Get NGOs
+        const ngoResponse =
+          await getNGOs();
+
+        const ngoData =
+          ngoResponse.data?.ngos ||
+          ngoResponse.data;
+
+        if (!Array.isArray(ngoData)) {
+          setError(
+            "Unable to load NGOs."
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        // Calculate distance
+        const nearbyNGOs = ngoData
+          .map((ngo) => {
+            const location =
+              getNGOLocation(ngo);
+
+            if (!location) {
+              return null;
+            }
+
+            const distance =
+              calculateDistance(
+                donationLat,
+                donationLng,
+                location.latitude,
+                location.longitude
+              );
+
+            return {
+              ...ngo,
+              distance,
+            };
+          })
+          .filter(Boolean)
+          .sort(
+            (a, b) =>
+              a.distance - b.distance
+          )
+          .slice(0, 5);
+
+        setNgos(nearbyNGOs);
+
+      } catch (err) {
+        console.error(
+          "Recommendation error:",
+          err
+        );
+
+        setError(
+          err.response?.data?.message ||
+            "Failed to load recommended NGOs"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecommendations();
   }, [donationId]);
 
   // ==========================================
@@ -74,17 +198,32 @@ const RecommendedNGO = ({
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
+        <h2 className="text-xl font-bold text-gray-800">
           Recommended NGOs
         </h2>
 
-        <div className="flex items-center gap-3 text-gray-500">
+        <div className="mt-5 space-y-4">
 
-          <div className="w-5 h-5 border-2 border-green-200 border-t-green-600 rounded-full animate-spin" />
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="animate-pulse flex gap-4"
+            >
 
-          Finding nearby NGOs...
+              <div className="w-12 h-12 bg-gray-200 rounded-full" />
+
+              <div className="flex-1">
+
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+
+                <div className="h-3 bg-gray-200 rounded w-3/4" />
+
+              </div>
+
+            </div>
+          ))}
 
         </div>
 
@@ -98,13 +237,13 @@ const RecommendedNGO = ({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+      <div className="bg-white rounded-2xl border border-red-100 p-6">
 
         <h2 className="text-xl font-bold text-gray-800">
           Recommended NGOs
         </h2>
 
-        <p className="text-red-600 mt-2">
+        <p className="text-sm text-red-500 mt-3">
           {error}
         </p>
 
@@ -113,33 +252,69 @@ const RecommendedNGO = ({
   }
 
   // ==========================================
-  // EMPTY
+  // NO NGO
   // ==========================================
 
   if (ngos.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
         <h2 className="text-xl font-bold text-gray-800">
           Recommended NGOs
         </h2>
 
-        <p className="text-gray-500 mt-2">
-          No nearby NGOs found within 50 km.
-        </p>
+        <div className="mt-5 text-center py-8">
+
+          <div className="text-4xl mb-3">
+            🏢
+          </div>
+
+          <p className="text-gray-600 font-medium">
+            No nearby NGOs found
+          </p>
+
+          <p className="text-sm text-gray-400 mt-1">
+            More NGOs may become available
+            soon.
+          </p>
+
+        </div>
 
       </div>
     );
   }
 
   // ==========================================
+  // NGO CARD
+  // ==========================================
+
+  const getNGOName = (ngo) => {
+    return (
+      ngo.organizationName ||
+      ngo.name ||
+      ngo.ngoName ||
+      "NGO"
+    );
+  };
+
+  const getNGOAddress = (ngo) => {
+    return (
+      ngo.address ||
+      ngo.location?.address ||
+      "Address not available"
+    );
+  };
+
+  // ==========================================
   // UI
   // ==========================================
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
-      <div className="flex items-center justify-between mb-5">
+      {/* HEADER */}
+
+      <div className="flex items-center justify-between mb-6">
 
         <div>
 
@@ -148,83 +323,120 @@ const RecommendedNGO = ({
           </h2>
 
           <p className="text-sm text-gray-500 mt-1">
-            Sorted by distance from the donation.
+            NGOs nearest to this donation
           </p>
 
         </div>
 
-        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-          {ngos.length} found
-        </span>
+        <div className="text-2xl">
+          🎯
+        </div>
 
       </div>
 
+      {/* NGO LIST */}
+
       <div className="space-y-4">
 
-        {ngos.map((ngo, index) => {
+        {ngos.map((ngo, index) => (
 
-          const ngoId =
-            ngo._id ||
-            ngo.id;
+          <div
+            key={ngo._id || index}
+            className={`border rounded-xl p-4 transition hover:shadow-md ${
+              index === 0
+                ? "border-green-300 bg-green-50"
+                : "border-gray-200"
+            }`}
+          >
 
-          return (
-            <div
-              key={ngoId}
-              className="border border-gray-200 rounded-xl p-4 hover:border-green-300 transition"
-            >
+            <div className="flex gap-4">
 
-              <div className="flex items-start justify-between gap-4">
+              {/* ICON */}
 
-                <div className="flex gap-3">
+              <div className="w-12 h-12 shrink-0 bg-green-100 rounded-full flex items-center justify-center text-xl">
+                🏢
+              </div>
 
-                  {/* RANK */}
+              {/* INFO */}
 
-                  <div className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold shrink-0">
-                    {index + 1}
-                  </div>
+              <div className="flex-1 min-w-0">
 
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+
+                  <div className="flex items-center gap-2">
 
                     <h3 className="font-bold text-gray-800">
-                      {ngo.name ||
-                        "NGO"}
+                      {getNGOName(ngo)}
                     </h3>
 
-                    {ngo.address && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        📍 {ngo.address}
-                      </p>
-                    )}
-
-                    {ngo.email && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        ✉️ {ngo.email}
-                      </p>
+                    {index === 0 && (
+                      <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+                        Best Match
+                      </span>
                     )}
 
                   </div>
+
+                  <span className="text-sm font-semibold text-green-600">
+                    {ngo.distance.toFixed(1)} km
+                  </span>
 
                 </div>
 
-                {/* DISTANCE */}
+                <p className="text-sm text-gray-500 mt-2">
+                  📍 {getNGOAddress(ngo)}
+                </p>
 
-                <div className="text-right shrink-0">
-
-                  <p className="text-lg font-bold text-green-600">
-                    {ngo.distance} km
+                {ngo.phone && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    📞 {ngo.phone}
                   </p>
+                )}
 
-                  <p className="text-xs text-gray-500">
-                    away
-                  </p>
+                {/* DISTANCE BAR */}
+
+                <div className="mt-3">
+
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+
+                    <div
+                      className="h-full bg-green-500 rounded-full"
+                      style={{
+                        width: `${Math.max(
+                          10,
+                          Math.min(
+                            100,
+                            100 -
+                              ngo.distance *
+                                5
+                          )
+                        )}%`,
+                      }}
+                    />
+
+                  </div>
 
                 </div>
 
               </div>
 
             </div>
-          );
-        })}
+
+          </div>
+
+        ))}
+
+      </div>
+
+      {/* FOOTER */}
+
+      <div className="mt-5 pt-4 border-t border-gray-100">
+
+        <p className="text-xs text-gray-400">
+          Recommendations are based on the
+          distance between the donation and NGO
+          locations.
+        </p>
 
       </div>
 

@@ -6,6 +6,7 @@ import {
   getDonationById,
   claimDonation,
 } from "../../api/api";
+import DonationMap from "../../Components/DonationMap";
 
 const NGODonationDetails = () => {
   const { id } = useParams();
@@ -521,6 +522,21 @@ const NGODonationDetails = () => {
 
           )}
 
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Donation Location
+              </h2>
+                
+              <DonationMap
+                latitude={donation?.location?.latitude}
+                longitude={donation?.location?.longitude}
+                donation={donation}
+                height="400px"
+              />
+            
+            </div>
+                
           {/* ====================================
               CLAIM SECTION
           ==================================== */}

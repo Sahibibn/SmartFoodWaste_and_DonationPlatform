@@ -2,22 +2,14 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
-
-import { getAnalytics } from "../../api/api";
+  getAnalytics,
+} from "../../api/api";
 
 const AnalyticsDashboard = () => {
+  // ==========================================
+  // STATE
+  // ==========================================
+
   const [analytics, setAnalytics] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -35,26 +27,16 @@ const AnalyticsDashboard = () => {
 
       const response = await getAnalytics();
 
-      console.log(
-        "Analytics response:",
-        response.data
-      );
+      setAnalytics(response.data);
 
-      const data =
-        response.data?.analytics ||
-        response.data?.data ||
-        response.data;
-
-      setAnalytics(data);
-
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Failed to load analytics:",
-        error
+        err
       );
 
       const message =
-        error.response?.data?.message ||
+        err.response?.data?.message ||
         "Failed to load analytics";
 
       setError(message);
@@ -66,6 +48,10 @@ const AnalyticsDashboard = () => {
     }
   };
 
+  // ==========================================
+  // INITIAL LOAD
+  // ==========================================
+
   useEffect(() => {
     loadAnalytics();
   }, []);
@@ -76,9 +62,17 @@ const AnalyticsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
+      <div className="min-h-[70vh] flex items-center justify-center">
 
-        <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin" />
+        <div className="text-center">
+
+          <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto" />
+
+          <p className="mt-4 text-gray-600">
+            Loading analytics...
+          </p>
+
+        </div>
 
       </div>
     );
@@ -90,115 +84,66 @@ const AnalyticsDashboard = () => {
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto py-20">
+      <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
 
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
-
-          <div className="text-5xl mb-4">
-            ⚠️
-          </div>
-
-          <h2 className="text-2xl font-bold text-red-700">
-            Unable to load analytics
-          </h2>
-
-          <p className="text-red-600 mt-2">
-            {error}
-          </p>
-
-          <button
-            onClick={loadAnalytics}
-            className="mt-5 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            Try Again
-          </button>
-
+        <div className="text-5xl mb-4">
+          ⚠️
         </div>
+
+        <h2 className="text-xl font-bold text-gray-800">
+          Unable to load analytics
+        </h2>
+
+        <p className="text-gray-500 mt-2">
+          {error}
+        </p>
+
+        <button
+          onClick={loadAnalytics}
+          className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+        >
+          Try Again
+        </button>
 
       </div>
     );
   }
 
   // ==========================================
-  // SAFE VALUES
+  // SAFE DATA
   // ==========================================
 
+  const data = analytics || {};
+
   const totalDonations =
-    analytics?.totalDonations ??
-    analytics?.donations ??
+    data.totalDonations ??
+    data.donations ??
     0;
 
-  const availableDonations =
-    analytics?.availableDonations ??
-    analytics?.available ??
+  const activeDonations =
+    data.activeDonations ??
+    data.availableDonations ??
     0;
 
   const claimedDonations =
-    analytics?.claimedDonations ??
-    analytics?.claimed ??
+    data.claimedDonations ??
+    data.claims ??
     0;
 
   const completedDonations =
-    analytics?.completedDonations ??
-    analytics?.completed ??
+    data.completedDonations ??
+    data.completed ??
+    0;
+
+  const totalUsers =
+    data.totalUsers ??
+    data.users ??
     0;
 
   const totalNGOs =
-    analytics?.totalNGOs ??
-    analytics?.ngos ??
+    data.totalNGOs ??
+    data.ngos ??
     0;
-
-  const totalDonors =
-    analytics?.totalDonors ??
-    analytics?.donors ??
-    0;
-
-  const totalClaims =
-    analytics?.totalClaims ??
-    analytics?.claims ??
-    0;
-
-  // ==========================================
-  // PIE DATA
-  // ==========================================
-
-  const donationStatusData = [
-    {
-      name: "Available",
-      value: availableDonations,
-    },
-    {
-      name: "Claimed",
-      value: claimedDonations,
-    },
-    {
-      name: "Completed",
-      value: completedDonations,
-    },
-  ].filter((item) => item.value > 0);
-
-  // ==========================================
-  // BAR DATA
-  // ==========================================
-
-  const overviewData = [
-    {
-      name: "Donations",
-      value: totalDonations,
-    },
-    {
-      name: "Claims",
-      value: totalClaims,
-    },
-    {
-      name: "NGOs",
-      value: totalNGOs,
-    },
-    {
-      name: "Donors",
-      value: totalDonors,
-    },
-  ];
 
   // ==========================================
   // STAT CARD
@@ -211,13 +156,13 @@ const AnalyticsDashboard = () => {
     description,
   }) => {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
 
           <div>
 
-            <p className="text-gray-500 text-sm font-medium">
+            <p className="text-sm font-medium text-gray-500">
               {title}
             </p>
 
@@ -233,7 +178,7 @@ const AnalyticsDashboard = () => {
 
           </div>
 
-          <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-2xl">
+          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">
             {icon}
           </div>
 
@@ -244,8 +189,26 @@ const AnalyticsDashboard = () => {
   };
 
   // ==========================================
-  // UI
+  // DONATION STATUS
   // ==========================================
+
+  const statusData = [
+    {
+      label: "Available",
+      value: activeDonations,
+      icon: "🟢",
+    },
+    {
+      label: "Claimed",
+      value: claimedDonations,
+      icon: "🟡",
+    },
+    {
+      label: "Completed",
+      value: completedDonations,
+      icon: "🔵",
+    },
+  ];
 
   return (
     <div className="space-y-8">
@@ -254,7 +217,7 @@ const AnalyticsDashboard = () => {
           HEADER
       ====================================== */}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
         <div>
 
@@ -263,26 +226,25 @@ const AnalyticsDashboard = () => {
           </h1>
 
           <p className="text-gray-500 mt-1">
-            Monitor food donations, NGOs and
-            food waste reduction.
+            Monitor food donations and platform activity.
           </p>
 
         </div>
 
         <button
           onClick={loadAnalytics}
-          className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold"
+          className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold transition"
         >
-          Refresh Data
+          ↻ Refresh
         </button>
 
       </div>
 
       {/* ======================================
-          STAT CARDS
+          MAIN STATS
       ====================================== */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
         <StatCard
           title="Total Donations"
@@ -292,227 +254,237 @@ const AnalyticsDashboard = () => {
         />
 
         <StatCard
-          title="Available"
-          value={availableDonations}
-          icon="🥗"
-          description="Waiting for NGOs"
+          title="Available Donations"
+          value={activeDonations}
+          icon="📦"
+          description="Currently available"
         />
 
         <StatCard
-          title="Claimed"
+          title="Claimed Donations"
           value={claimedDonations}
           icon="🤝"
-          description="Currently claimed"
+          description="Donations claimed by NGOs"
         />
 
         <StatCard
-          title="Completed"
+          title="Completed Donations"
           value={completedDonations}
           icon="✅"
-          description="Successfully delivered"
-        />
-
-      </div>
-
-      {/* ======================================
-          USERS
-      ====================================== */}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        <StatCard
-          title="Total Donors"
-          value={totalDonors}
-          icon="👨‍🍳"
+          description="Successfully completed"
         />
 
         <StatCard
-          title="Total NGOs"
+          title="Total Users"
+          value={totalUsers}
+          icon="👥"
+          description="Registered users"
+        />
+
+        <StatCard
+          title="Registered NGOs"
           value={totalNGOs}
           icon="🏢"
-        />
-
-        <StatCard
-          title="Total Claims"
-          value={totalClaims}
-          icon="📦"
+          description="Partner NGOs"
         />
 
       </div>
 
       {/* ======================================
-          CHARTS
+          DONATION STATUS
       ====================================== */}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
-        {/* BAR CHART */}
+        <div className="flex items-center justify-between mb-6">
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <div>
 
-          <h2 className="text-xl font-bold text-gray-800">
-            Platform Overview
-          </h2>
+            <h2 className="text-xl font-bold text-gray-800">
+              Donation Status
+            </h2>
 
-          <p className="text-sm text-gray-500 mt-1">
-            Overall Smart Food Waste activity
-          </p>
-
-          <div className="h-80 mt-6">
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-
-              <BarChart
-                data={overviewData}
-              >
-
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                />
-
-                <XAxis dataKey="name" />
-
-                <YAxis />
-
-                <Tooltip />
-
-                <Bar
-                  dataKey="value"
-                  fill="#16a34a"
-                  radius={[6, 6, 0, 0]}
-                />
-
-              </BarChart>
-
-            </ResponsiveContainer>
+            <p className="text-sm text-gray-500 mt-1">
+              Current distribution of donations
+            </p>
 
           </div>
 
         </div>
 
-        {/* PIE CHART */}
+        <div className="space-y-5">
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          {statusData.map((item) => {
 
-          <h2 className="text-xl font-bold text-gray-800">
-            Donation Status
-          </h2>
-
-          <p className="text-sm text-gray-500 mt-1">
-            Current donation distribution
-          </p>
-
-          <div className="h-80 mt-6">
-
-            {donationStatusData.length === 0 ? (
-
-              <div className="h-full flex items-center justify-center text-gray-400">
-                No donation data available
-              </div>
-
-            ) : (
-
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
-                <PieChart>
-
-                  <Pie
-                    data={donationStatusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-
-                    {donationStatusData.map(
-                      (_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                        />
-                      )
-                    )}
-
-                  </Pie>
-
-                  <Tooltip />
-
-                  <Legend />
-
-                </PieChart>
-
-              </ResponsiveContainer>
-
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ======================================
-          SUCCESS RATE
-      ====================================== */}
-
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-
-        <h2 className="text-xl font-bold text-gray-800">
-          Donation Success Rate
-        </h2>
-
-        <p className="text-gray-500 text-sm mt-1">
-          Percentage of donations successfully
-          completed.
-        </p>
-
-        <div className="mt-6">
-
-          <div className="flex justify-between mb-2">
-
-            <span className="text-sm font-medium text-gray-600">
-              Completion Rate
-            </span>
-
-            <span className="text-sm font-bold text-green-600">
-
-              {totalDonations > 0
+            const percentage =
+              totalDonations > 0
                 ? Math.round(
-                    (completedDonations /
+                    (item.value /
                       totalDonations) *
                       100
                   )
-                : 0}
-              %
+                : 0;
 
-            </span>
+            return (
+              <div key={item.label}>
+
+                <div className="flex items-center justify-between mb-2">
+
+                  <div className="flex items-center gap-2">
+
+                    <span>
+                      {item.icon}
+                    </span>
+
+                    <span className="font-medium text-gray-700">
+                      {item.label}
+                    </span>
+
+                  </div>
+
+                  <span className="text-sm font-semibold text-gray-700">
+                    {item.value}
+                  </span>
+
+                </div>
+
+                <div className="w-full bg-gray-100 rounded-full h-3">
+
+                  <div
+                    className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  />
+
+                </div>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  {percentage}% of total donations
+                </p>
+
+              </div>
+            );
+          })}
+
+        </div>
+
+      </div>
+
+      {/* ======================================
+          IMPACT SECTION
+      ====================================== */}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* FOOD IMPACT */}
+
+        <div className="bg-green-600 text-white rounded-2xl p-7">
+
+          <div className="text-4xl mb-4">
+            🌱
+          </div>
+
+          <h2 className="text-2xl font-bold">
+            Food Waste Impact
+          </h2>
+
+          <p className="text-green-100 mt-2">
+            Every successful donation helps reduce
+            food waste and supports people in need.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 mt-6">
+
+            <div className="bg-white/10 rounded-xl p-4">
+
+              <p className="text-3xl font-bold">
+                {completedDonations}
+              </p>
+
+              <p className="text-sm text-green-100">
+                Successful Donations
+              </p>
+
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-4">
+
+              <p className="text-3xl font-bold">
+                {totalNGOs}
+              </p>
+
+              <p className="text-sm text-green-100">
+                NGO Partners
+              </p>
+
+            </div>
 
           </div>
 
-          <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
+        </div>
 
-            <div
-              className="h-full bg-green-600 rounded-full transition-all"
-              style={{
-                width: `${
-                  totalDonations > 0
-                    ? Math.min(
-                        (completedDonations /
-                          totalDonations) *
-                          100,
-                        100
-                      )
-                    : 0
-                }%`,
-              }}
-            />
+        {/* PLATFORM SUMMARY */}
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+
+          <h2 className="text-xl font-bold text-gray-800">
+            Platform Summary
+          </h2>
+
+          <p className="text-gray-500 text-sm mt-1">
+            Current Smart Food Waste activity
+          </p>
+
+          <div className="mt-6 space-y-4">
+
+            <div className="flex items-center justify-between border-b pb-4">
+
+              <span className="text-gray-600">
+                Total Donations
+              </span>
+
+              <span className="font-bold text-gray-800">
+                {totalDonations}
+              </span>
+
+            </div>
+
+            <div className="flex items-center justify-between border-b pb-4">
+
+              <span className="text-gray-600">
+                Active Donations
+              </span>
+
+              <span className="font-bold text-green-600">
+                {activeDonations}
+              </span>
+
+            </div>
+
+            <div className="flex items-center justify-between border-b pb-4">
+
+              <span className="text-gray-600">
+                Claims
+              </span>
+
+              <span className="font-bold text-yellow-600">
+                {claimedDonations}
+              </span>
+
+            </div>
+
+            <div className="flex items-center justify-between">
+
+              <span className="text-gray-600">
+                Completed
+              </span>
+
+              <span className="font-bold text-blue-600">
+                {completedDonations}
+              </span>
+
+            </div>
 
           </div>
 

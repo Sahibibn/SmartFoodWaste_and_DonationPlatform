@@ -9,6 +9,7 @@ import store from "./redux/store";
 import AuthInitializer from "./Components/AuthInitializer";
 
 import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 ReactDOM.createRoot(
   document.getElementById("root")

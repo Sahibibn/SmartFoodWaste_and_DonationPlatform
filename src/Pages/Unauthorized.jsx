@@ -4,17 +4,17 @@ const Unauthorized = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
 
-      <div className="text-center">
+      <div className="bg-white shadow-lg rounded-2xl p-10 text-center max-w-md w-full">
 
-        <h1 className="text-7xl font-bold text-red-500">
-          403
+        <div className="text-6xl mb-4">
+          🚫
+        </div>
+
+        <h1 className="text-3xl font-bold text-gray-800">
+          Access Denied
         </h1>
 
-        <h2 className="text-2xl font-bold text-gray-800 mt-4">
-          Access Denied
-        </h2>
-
-        <p className="text-gray-500 mt-2">
+        <p className="text-gray-500 mt-3">
           You don't have permission to access this page.
         </p>
 

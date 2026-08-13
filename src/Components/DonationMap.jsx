@@ -1,9 +1,18 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+} from "react-leaflet";
+
 import L from "leaflet";
+import { useEffect } from "react";
 
-import "leaflet/dist/leaflet.css";
+// ==========================================
+// FIX LEAFLET DEFAULT MARKER ICON
+// ==========================================
 
-// Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -17,135 +26,121 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const DonationMap = ({
-  donations = [],
-  center = [28.6139, 77.209],
-  zoom = 10,
-}) => {
-  // ==========================================
-  // GET VALID DONATIONS
-  // ==========================================
+// ==========================================
+// MAP CENTER COMPONENT
+// ==========================================
 
-  const validDonations = donations.filter(
-    (donation) => {
-      const lat =
-        donation.latitude ??
-        donation.lat ??
-        donation.location?.coordinates?.[1];
+const MapCenter = ({ position }) => {
+  const map = useMap();
 
-      const lng =
-        donation.longitude ??
-        donation.lng ??
-        donation.lon ??
-        donation.location?.coordinates?.[0];
-
-      return (
-        typeof lat === "number" &&
-        typeof lng === "number"
-      );
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 13);
     }
-  );
+  }, [position, map]);
 
-  // ==========================================
-  // MAP
-  // ==========================================
+  return null;
+};
+
+// ==========================================
+// DONATION MAP
+// ==========================================
+
+const DonationMap = ({
+  latitude,
+  longitude,
+  donation,
+  height = "400px",
+}) => {
+  // ========================================
+  // VALIDATE LOCATION
+  // ========================================
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return (
+      <div
+        className="w-full bg-gray-100 rounded-xl flex items-center justify-center text-center p-8"
+        style={{ height }}
+      >
+        <div>
+          <div className="text-4xl mb-3">
+            📍
+          </div>
+
+          <h3 className="font-semibold text-gray-700">
+            Location unavailable
+          </h3>
+
+          <p className="text-sm text-gray-500 mt-1">
+            This donation does not have valid coordinates.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const position = [lat, lng];
 
   return (
-    <div className="w-full h-125 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
-
+    <div
+      className="w-full rounded-xl overflow-hidden border border-gray-200"
+      style={{ height }}
+    >
       <MapContainer
-        center={center}
-        zoom={zoom}
+        center={position}
+        zoom={13}
         scrollWheelZoom={true}
         className="w-full h-full"
       >
 
+        {/* MAP TILES */}
+
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {validDonations.map((donation) => {
+        {/* CENTER MAP */}
 
-          const latitude =
-            donation.latitude ??
-            donation.lat ??
-            donation.location?.coordinates?.[1];
+        <MapCenter position={position} />
 
-          const longitude =
-            donation.longitude ??
-            donation.lng ??
-            donation.lon ??
-            donation.location?.coordinates?.[0];
+        {/* DONATION MARKER */}
 
-          const donationId =
-            donation._id ||
-            donation.id;
+        <Marker position={position}>
 
-          const foodName =
-            donation.foodName ||
-            donation.title ||
-            donation.name ||
-            "Food Donation";
+          <Popup>
 
-          const location =
-            donation.pickupLocation ||
-            donation.address ||
-            donation.locationName ||
-            "Location not specified";
+            <div className="min-w-45">
 
-          return (
-            <Marker
-              key={donationId}
-              position={[
-                latitude,
-                longitude,
-              ]}
-            >
+              <h3 className="font-bold text-gray-800">
+                {donation?.foodName ||
+                  donation?.name ||
+                  "Food Donation"}
+              </h3>
 
-              <Popup>
+              <p className="text-sm text-gray-500 mt-1">
+                {donation?.foodType ||
+                  donation?.category ||
+                  "Food"}
+              </p>
 
-                <div className="min-w-45">
+              <p className="text-sm mt-2">
+                📍 Donation Location
+              </p>
 
-                  <h3 className="font-bold text-lg">
-                    {foodName}
-                  </h3>
+            </div>
 
-                  <p className="text-gray-600 mt-1">
-                    📍 {location}
-                  </p>
+          </Popup>
 
-                  {donation.quantity && (
-                    <p className="mt-1">
-                      Quantity:{" "}
-                      <strong>
-                        {donation.quantity}
-                        {donation.unit
-                          ? ` ${donation.unit}`
-                          : ""}
-                      </strong>
-                    </p>
-                  )}
-
-                  {donation.expiryDate && (
-                    <p className="mt-1">
-                      Expiry:{" "}
-                      {new Date(
-                        donation.expiryDate
-                      ).toLocaleDateString()}
-                    </p>
-                  )}
-
-                </div>
-
-              </Popup>
-
-            </Marker>
-          );
-        })}
+        </Marker>
 
       </MapContainer>
-
     </div>
   );
 };

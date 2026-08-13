@@ -16,14 +16,16 @@ const CreateDonation = () => {
     foodType: "",
     quantity: "",
     unit: "kg",
-    expiryDate: "",
-    pickupLocation: "",
     description: "",
+    expiryDate: "",
+    address: "",
     latitude: "",
     longitude: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] =
+    useState(false);
 
   // ==========================================
   // HANDLE INPUT
@@ -42,7 +44,7 @@ const CreateDonation = () => {
   // GET CURRENT LOCATION
   // ==========================================
 
-  const getCurrentLocation = () => {
+  const handleGetLocation = () => {
     if (!navigator.geolocation) {
       toast.error(
         "Geolocation is not supported by your browser"
@@ -50,19 +52,20 @@ const CreateDonation = () => {
       return;
     }
 
+    setLocationLoading(true);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const latitude =
-          position.coords.latitude;
-
-        const longitude =
-          position.coords.longitude;
+        const { latitude, longitude } =
+          position.coords;
 
         setFormData((prev) => ({
           ...prev,
-          latitude: latitude.toString(),
-          longitude: longitude.toString(),
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6),
         }));
+
+        setLocationLoading(false);
 
         toast.success(
           "Location detected successfully"
@@ -75,14 +78,31 @@ const CreateDonation = () => {
           error
         );
 
-        if (error.code === 1) {
-          toast.error(
-            "Please allow location permission"
-          );
-        } else {
-          toast.error(
-            "Unable to detect your location"
-          );
+        setLocationLoading(false);
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error(
+              "Location permission was denied"
+            );
+            break;
+
+          case error.POSITION_UNAVAILABLE:
+            toast.error(
+              "Location information is unavailable"
+            );
+            break;
+
+          case error.TIMEOUT:
+            toast.error(
+              "Location request timed out"
+            );
+            break;
+
+          default:
+            toast.error(
+              "Unable to detect location"
+            );
         }
       },
 
@@ -95,7 +115,7 @@ const CreateDonation = () => {
   };
 
   // ==========================================
-  // VALIDATION
+  // VALIDATE FORM
   // ==========================================
 
   const validateForm = () => {
@@ -104,7 +124,7 @@ const CreateDonation = () => {
       return false;
     }
 
-    if (!formData.foodType.trim()) {
+    if (!formData.foodType) {
       toast.error("Please select food type");
       return false;
     }
@@ -128,19 +148,19 @@ const CreateDonation = () => {
       return false;
     }
 
-    if (!formData.pickupLocation.trim()) {
+    if (!formData.address.trim()) {
       toast.error(
-        "Please enter pickup location"
+        "Please enter pickup address"
       );
       return false;
     }
 
     if (
-      formData.latitude === "" ||
-      formData.longitude === ""
+      !formData.latitude ||
+      !formData.longitude
     ) {
       toast.error(
-        "Please detect your pickup location"
+        "Please detect your location before creating the donation"
       );
       return false;
     }
@@ -149,7 +169,7 @@ const CreateDonation = () => {
   };
 
   // ==========================================
-  // SUBMIT
+  // SUBMIT DONATION
   // ==========================================
 
   const handleSubmit = async (e) => {
@@ -162,6 +182,10 @@ const CreateDonation = () => {
     try {
       setLoading(true);
 
+      // ======================================
+      // DONATION PAYLOAD
+      // ======================================
+
       const donationData = {
         foodName: formData.foodName.trim(),
 
@@ -171,25 +195,26 @@ const CreateDonation = () => {
 
         unit: formData.unit,
 
-        expiryDate: formData.expiryDate,
-
-        pickupLocation:
-          formData.pickupLocation.trim(),
-
         description:
           formData.description.trim(),
 
-        latitude: Number(
-          formData.latitude
-        ),
+        expiryDate: formData.expiryDate,
 
-        longitude: Number(
-          formData.longitude
-        ),
+        location: {
+          address: formData.address.trim(),
+
+          latitude: Number(
+            formData.latitude
+          ),
+
+          longitude: Number(
+            formData.longitude
+          ),
+        },
       };
 
       console.log(
-        "Creating donation:",
+        "Donation Data:",
         donationData
       );
 
@@ -198,6 +223,10 @@ const CreateDonation = () => {
       toast.success(
         "Donation created successfully!"
       );
+
+      // ======================================
+      // REDIRECT
+      // ======================================
 
       navigate("/my-donations");
 
@@ -211,10 +240,37 @@ const CreateDonation = () => {
         error.response?.data?.message ||
           "Failed to create donation"
       );
-
     } finally {
       setLoading(false);
     }
+  };
+
+  // ==========================================
+  // MINIMUM EXPIRY DATE
+  // ==========================================
+
+  const getMinDateTime = () => {
+    const now = new Date();
+
+    const year = now.getFullYear();
+
+    const month = String(
+      now.getMonth() + 1
+    ).padStart(2, "0");
+
+    const day = String(
+      now.getDate()
+    ).padStart(2, "0");
+
+    const hours = String(
+      now.getHours()
+    ).padStart(2, "0");
+
+    const minutes = String(
+      now.getMinutes()
+    ).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   // ==========================================
@@ -235,346 +291,441 @@ const CreateDonation = () => {
         </h1>
 
         <p className="text-gray-500 mt-2">
-          Share surplus food with people who
-          need it.
+          Share your surplus food with people
+          who need it.
         </p>
 
       </div>
 
       {/* ======================================
-          FORM
+          FORM CARD
       ====================================== */}
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 space-y-6"
-      >
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
 
-        {/* ====================================
-            FOOD INFORMATION
-        ==================================== */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8"
+        >
 
-        <div>
+          {/* ====================================
+              FOOD INFORMATION
+          ==================================== */}
 
-          <h2 className="text-xl font-bold text-gray-800 mb-5">
-            Food Information
-          </h2>
+          <div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <h2 className="text-xl font-bold text-gray-800 mb-5">
+              Food Information
+            </h2>
 
-            {/* FOOD NAME */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            <div>
+              {/* FOOD NAME */}
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Food Name *
-              </label>
+              <div>
 
-              <input
-                type="text"
-                name="foodName"
-                value={formData.foodName}
-                onChange={handleChange}
-                placeholder="e.g. Cooked Rice"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
-              />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Food Name
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
 
-            </div>
+                <input
+                  type="text"
+                  name="foodName"
+                  value={formData.foodName}
+                  onChange={handleChange}
+                  placeholder="e.g. Rice, Biryani, Bread"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
 
-            {/* FOOD TYPE */}
+              </div>
 
-            <div>
+              {/* FOOD TYPE */}
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Food Type *
-              </label>
+              <div>
 
-              <select
-                name="foodType"
-                value={formData.foodType}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
-              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Food Type
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
 
-                <option value="">
-                  Select food type
-                </option>
+                <select
+                  name="foodType"
+                  value={formData.foodType}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
 
-                <option value="Cooked Food">
-                  Cooked Food
-                </option>
+                  <option value="">
+                    Select food type
+                  </option>
 
-                <option value="Fruits">
-                  Fruits
-                </option>
+                  <option value="Cooked Food">
+                    Cooked Food
+                  </option>
 
-                <option value="Vegetables">
-                  Vegetables
-                </option>
+                  <option value="Raw Food">
+                    Raw Food
+                  </option>
 
-                <option value="Bakery">
-                  Bakery
-                </option>
+                  <option value="Packaged Food">
+                    Packaged Food
+                  </option>
 
-                <option value="Packaged Food">
-                  Packaged Food
-                </option>
+                  <option value="Fruits">
+                    Fruits
+                  </option>
 
-                <option value="Grains">
-                  Grains
-                </option>
+                  <option value="Vegetables">
+                    Vegetables
+                  </option>
 
-                <option value="Dairy">
-                  Dairy
-                </option>
+                  <option value="Bakery">
+                    Bakery
+                  </option>
 
-                <option value="Other">
-                  Other
-                </option>
+                  <option value="Dairy">
+                    Dairy
+                  </option>
 
-              </select>
+                  <option value="Other">
+                    Other
+                  </option>
 
-            </div>
+                </select>
 
-            {/* QUANTITY */}
+              </div>
 
-            <div>
+              {/* QUANTITY */}
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quantity *
-              </label>
+              <div>
 
-              <input
-                type="number"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                placeholder="e.g. 20"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
-              />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quantity
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
 
-            </div>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  min="1"
+                  placeholder="e.g. 20"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
 
-            {/* UNIT */}
+              </div>
 
-            <div>
+              {/* UNIT */}
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Unit
-              </label>
+              <div>
 
-              <select
-                name="unit"
-                value={formData.unit}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
-              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Unit
+                </label>
 
-                <option value="kg">
-                  Kilograms
-                </option>
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
 
-                <option value="liters">
-                  Liters
-                </option>
+                  <option value="kg">
+                    Kilograms (kg)
+                  </option>
 
-                <option value="pieces">
-                  Pieces
-                </option>
+                  <option value="grams">
+                    Grams
+                  </option>
 
-                <option value="packets">
-                  Packets
-                </option>
+                  <option value="liters">
+                    Liters
+                  </option>
 
-                <option value="boxes">
-                  Boxes
-                </option>
+                  <option value="packets">
+                    Packets
+                  </option>
 
-              </select>
+                  <option value="pieces">
+                    Pieces
+                  </option>
 
-            </div>
+                  <option value="boxes">
+                    Boxes
+                  </option>
 
-            {/* EXPIRY */}
+                </select>
 
-            <div className="md:col-span-2">
-
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Expiry Date & Time *
-              </label>
-
-              <input
-                type="datetime-local"
-                name="expiryDate"
-                value={formData.expiryDate}
-                onChange={handleChange}
-                min={new Date()
-                  .toISOString()
-                  .slice(0, 16)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
-              />
+              </div>
 
             </div>
 
           </div>
 
-        </div>
+          {/* ====================================
+              DESCRIPTION
+          ==================================== */}
 
-        {/* ====================================
-            LOCATION
-        ==================================== */}
-
-        <div className="border-t pt-6">
-
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            Pickup Location
-          </h2>
-
-          <p className="text-sm text-gray-500 mb-5">
-            Your location helps us recommend the
-            donation to nearby NGOs.
-          </p>
-
-          {/* LOCATION NAME */}
-
-          <div className="mb-5">
+          <div>
 
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pickup Address / Location *
+              Description
             </label>
 
-            <input
-              type="text"
-              name="pickupLocation"
-              value={formData.pickupLocation}
+            <textarea
+              name="description"
+              value={formData.description}
               onChange={handleChange}
-              placeholder="e.g. Connaught Place, New Delhi"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+              rows="4"
+              placeholder="Describe the food, condition, packaging, etc."
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
 
           </div>
 
-          {/* LOCATION BUTTON */}
+          {/* ====================================
+              EXPIRY
+          ==================================== */}
 
-          <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+          <div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Food Expiry Date & Time
+              <span className="text-red-500">
+                {" "}*
+              </span>
+            </label>
+
+            <input
+              type="datetime-local"
+              name="expiryDate"
+              value={formData.expiryDate}
+              onChange={handleChange}
+              min={getMinDateTime()}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+
+            <p className="text-xs text-gray-500 mt-2">
+              Please provide an accurate expiry
+              time so NGOs can prioritize urgent
+              donations.
+            </p>
+
+          </div>
+
+          {/* ====================================
+              LOCATION
+          ==================================== */}
+
+          <div className="border-t border-gray-100 pt-8">
+
+            <div className="bg-green-50 border border-green-100 rounded-xl p-5">
+
+              {/* LOCATION HEADER */}
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                <div>
+
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Donation Location
+                  </h2>
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    Your location helps NGOs find
+                    and collect this donation.
+                  </p>
+
+                </div>
+
+                {/* LOCATION BUTTON */}
+
+                <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  disabled={locationLoading}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white px-5 py-3 rounded-lg font-semibold transition whitespace-nowrap"
+                >
+                  {locationLoading
+                    ? "📍 Detecting..."
+                    : "📍 Use My Location"}
+                </button>
+
+              </div>
+
+              {/* ADDRESS */}
+
+              <div className="mt-5">
+
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pickup Address
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
+
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Enter the complete pickup address"
+                  className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-green-500"
+                />
+
+              </div>
+
+              {/* COORDINATES */}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+
+                {/* LATITUDE */}
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Latitude
+                  </label>
+
+                  <input
+                    type="text"
+                    name="latitude"
+                    value={
+                      formData.latitude
+                    }
+                    onChange={handleChange}
+                    placeholder="Click Use My Location"
+                    readOnly
+                    className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none"
+                  />
+
+                </div>
+
+                {/* LONGITUDE */}
+
+                <div>
+
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Longitude
+                  </label>
+
+                  <input
+                    type="text"
+                    name="longitude"
+                    value={
+                      formData.longitude
+                    }
+                    onChange={handleChange}
+                    placeholder="Click Use My Location"
+                    readOnly
+                    className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none"
+                  />
+
+                </div>
+
+              </div>
+
+              {/* LOCATION STATUS */}
+
+              {formData.latitude &&
+                formData.longitude && (
+                  <div className="mt-4 bg-white border border-green-200 rounded-lg px-4 py-3 flex items-center gap-3">
+
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      ✓
+                    </div>
+
+                    <div>
+
+                      <p className="text-sm font-semibold text-green-700">
+                        Location detected
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        {formData.latitude},{" "}
+                        {formData.longitude}
+                      </p>
+
+                    </div>
+
+                  </div>
+                )}
+
+            </div>
+
+          </div>
+
+          {/* ====================================
+              INFO BOX
+          ==================================== */}
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+
+            <div className="flex gap-3">
+
+              <div className="text-xl">
+                💡
+              </div>
 
               <div>
 
-                <h3 className="font-semibold text-gray-800">
-                  📍 Detect Your Location
+                <h3 className="font-semibold text-blue-800">
+                  Why do we need your location?
                 </h3>
 
-                <p className="text-sm text-gray-500 mt-1">
-                  Allow browser location access to
-                  automatically capture coordinates.
+                <p className="text-sm text-blue-700 mt-1">
+                  Your location allows Smart Food
+                  Waste to recommend nearby NGOs
+                  and helps them collect your
+                  donation efficiently.
                 </p>
 
               </div>
 
-              <button
-                type="button"
-                onClick={getCurrentLocation}
-                className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold whitespace-nowrap"
-              >
-                Detect Location
-              </button>
-
             </div>
-
-            {/* COORDINATES */}
-
-            {(formData.latitude ||
-              formData.longitude) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-
-                  <p className="text-xs text-gray-500">
-                    Latitude
-                  </p>
-
-                  <p className="font-semibold text-gray-800 mt-1">
-                    {formData.latitude}
-                  </p>
-
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-
-                  <p className="text-xs text-gray-500">
-                    Longitude
-                  </p>
-
-                  <p className="font-semibold text-gray-800 mt-1">
-                    {formData.longitude}
-                  </p>
-
-                </div>
-
-              </div>
-            )}
 
           </div>
 
-        </div>
+          {/* ====================================
+              ACTION BUTTONS
+          ==================================== */}
 
-        {/* ====================================
-            DESCRIPTION
-        ==================================== */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-100">
 
-        <div className="border-t pt-6">
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/my-donations")
+              }
+              disabled={loading}
+              className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
 
-          <h2 className="text-xl font-bold text-gray-800 mb-5">
-            Additional Information
-          </h2>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-lg font-semibold transition"
+            >
+              {loading
+                ? "Creating Donation..."
+                : "Create Donation"}
+            </button>
 
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
+          </div>
 
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="4"
-            placeholder="Add details about the food, preparation time, packaging, etc."
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 resize-none"
-          />
+        </form>
 
-        </div>
-
-        {/* ====================================
-            ACTIONS
-        ==================================== */}
-
-        <div className="border-t pt-6 flex flex-col sm:flex-row gap-4">
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/dashboard")
-            }
-            className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-3 rounded-lg font-semibold transition"
-          >
-            {loading
-              ? "Creating Donation..."
-              : "Create Donation"}
-          </button>
-
-        </div>
-
-      </form>
+      </div>
 
     </div>
   );

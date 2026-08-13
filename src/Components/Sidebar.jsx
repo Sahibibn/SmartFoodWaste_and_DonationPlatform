@@ -2,155 +2,179 @@ import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 const Sidebar = () => {
-  const { user } = useSelector(
+  const { user, isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
-  const role = user?.role;
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  const role = user.role;
 
   // ==========================================
   // COMMON LINK STYLE
   // ==========================================
 
-  const linkClass = ({ isActive }) =>
+  const getLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
       isActive
-        ? "bg-green-600 text-white"
-        : "text-gray-700 hover:bg-green-50 hover:text-green-700"
+        ? "bg-green-100 text-green-700"
+        : "text-gray-600 hover:bg-gray-100 hover:text-green-600"
     }`;
 
   return (
-    <aside className="hidden md:flex w-64 min-h-[calc(100vh-64px)] bg-white border-r border-gray-200 flex-col">
+    <aside className="hidden md:block w-64 min-h-[calc(100vh-73px)] bg-white border-r border-gray-200">
 
-      {/* ======================================
-          LOGO
-      ====================================== */}
+      <div className="p-4">
 
-      <div className="p-6 border-b border-gray-100">
+        {/* ======================================
+            USER
+        ====================================== */}
 
-        <h2 className="text-xl font-bold text-green-600">
-          Smart Food Waste
-        </h2>
+        <div className="bg-green-50 rounded-xl p-4 mb-6">
 
-        {user && (
-          <p className="text-xs text-gray-500 mt-1">
-            {user.role}
-          </p>
-        )}
+          <div className="flex items-center gap-3">
 
-      </div>
+            <div className="w-11 h-11 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+              {user?.name
+                ?.charAt(0)
+                ?.toUpperCase() || "U"}
+            </div>
 
-      {/* ======================================
-          NAVIGATION
-      ====================================== */}
+            <div className="min-w-0">
 
-      <nav className="p-4 space-y-2 flex-1">
+              <p className="font-semibold text-gray-800 truncate">
+                {user?.name || "User"}
+              </p>
 
-        {/* ====================================
-            DONOR LINKS
-        ==================================== */}
+              <p className="text-xs text-green-600 font-medium">
+                {role}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ======================================
+            DONOR SIDEBAR
+        ====================================== */}
 
         {role === "DONOR" && (
-          <>
+
+          <nav className="space-y-2">
+
             <NavLink
               to="/dashboard"
-              className={linkClass}
+              className={getLinkClass}
             >
               <span>📊</span>
-              <span>Dashboard</span>
+              Dashboard
             </NavLink>
 
             <NavLink
               to="/create-donation"
-              className={linkClass}
+              className={getLinkClass}
             >
-              <span>➕</span>
-              <span>Create Donation</span>
+              <span>🍱</span>
+              Create Donation
             </NavLink>
 
             <NavLink
               to="/my-donations"
-              className={linkClass}
+              className={getLinkClass}
             >
-              <span>🍱</span>
-              <span>My Donations</span>
+              <span>📦</span>
+              My Donations
             </NavLink>
-          </>
+
+            <NavLink
+              to="/ngos"
+              className={getLinkClass}
+            >
+              <span>🤝</span>
+              NGOs
+            </NavLink>
+
+          </nav>
+
         )}
 
-        {/* ====================================
-            NGO LINKS
-        ==================================== */}
+        {/* ======================================
+            NGO SIDEBAR
+        ====================================== */}
 
         {role === "NGO" && (
-          <>
+
+          <nav className="space-y-2">
+
             <NavLink
               to="/ngo-dashboard"
-              className={linkClass}
+              className={getLinkClass}
             >
               <span>📊</span>
-              <span>Dashboard</span>
+              Dashboard
             </NavLink>
 
             <NavLink
               to="/available-donations"
-              className={linkClass}
+              className={getLinkClass}
             >
               <span>🍱</span>
-              <span>Available Donations</span>
+              Available Donations
             </NavLink>
 
             <NavLink
               to="/claims"
-              className={linkClass}
+              className={getLinkClass}
             >
               <span>📦</span>
-              <span>My Claims</span>
+              My Claims
             </NavLink>
-          </>
+
+            <NavLink
+              to="/ngos"
+              className={getLinkClass}
+            >
+              <span>🤝</span>
+              NGO Directory
+            </NavLink>
+
+          </nav>
+
         )}
 
-        {/* ====================================
-            ADMIN
-        ==================================== */}
+        {/* ======================================
+            ADMIN SIDEBAR
+        ====================================== */}
 
         {role === "ADMIN" && (
-          <>
+
+          <nav className="space-y-2">
+
             <NavLink
               to="/analytics"
-              className={linkClass}
+              className={getLinkClass}
             >
               <span>📊</span>
-              <span>Analytics</span>
+              Analytics
             </NavLink>
-          </>
+
+            <NavLink
+              to="/ngos"
+              className={getLinkClass}
+            >
+              <span>🤝</span>
+              NGOs
+            </NavLink>
+
+          </nav>
+
         )}
 
-        {/* ====================================
-            ANALYTICS
-        ==================================== */}
-
-        {role === "DONOR" && (
-          <NavLink
-            to="/analytics"
-            className={linkClass}
-          >
-            <span>📈</span>
-            <span>Analytics</span>
-          </NavLink>
-        )}
-
-        {role === "NGO" && (
-          <NavLink
-            to="/analytics"
-            className={linkClass}
-          >
-            <span>📈</span>
-            <span>Analytics</span>
-          </NavLink>
-        )}
-
-      </nav>
+      </div>
 
     </aside>
   );

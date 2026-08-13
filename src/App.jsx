@@ -52,6 +52,10 @@ import NGODonationDetails from "./Pages/Ngo/DonationDetails";
 import Unauthorized from "./Pages/Unauthorized";
 import ClaimDetails from "./Pages/Ngo/ClaimDetails";
 
+import NGODirectory from "./Pages/Ngo/NGODirectory";
+import NGODetails from "./Pages/Ngo/NGODetails";
+import NGOProfile from "./Pages/Ngo/NGOProfile";
+
 // import AnalyticsDashboard
 //   from "./Pages/Analytics/AnalyticsDashboard";
 
@@ -215,6 +219,15 @@ function App() {
             }
           />
 
+        <Route
+          path="/ngo-profile"
+          element={
+            <Layout>
+              <NGOProfile />
+            </Layout>
+          }
+        />
+
         {/* ANALYTICS */}
         <Route
           element={
@@ -243,21 +256,26 @@ function App() {
         <Route
           path="/ngos"
           element={
-            <Layout>
+            <ProtectedRoute
+              allowedRoles={["DONOR", "NGO", "ADMIN"]}
+            >
+              <Layout>
+                <NGODirectory />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
-              <div>
-
-                <h1 className="text-3xl font-bold text-gray-800">
-                  NGOs
-                </h1>
-
-                <p className="text-gray-500 mt-2">
-                  NGO directory coming soon.
-                </p>
-
-              </div>
-
-            </Layout>
+        <Route
+          path="/ngos/:id"
+          element={
+            <ProtectedRoute
+              allowedRoles={["DONOR", "NGO", "ADMIN"]}
+            >
+              <Layout>
+                <NGODetails />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
